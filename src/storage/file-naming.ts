@@ -29,7 +29,8 @@ export function createFileNamer(options: FileNamerOptions): FileNamer {
       .replace(/\s*[—-]\s*本文转载自.*$/i, "")
       .slice(0, 80)
       .replace(/[。！？，、；：]+$/g, "")
-      .replace(/\s+/g, "");
+      .replace(/\s+/g, " ")
+      .trim();
   }
 
   function generateFilename(title: string, contentType: ContentTypeDirectory): string {

@@ -9,7 +9,7 @@ describe("createFileNamer", () => {
     });
 
     expect(namer.generateFilename("转载: A/B<C> 技术文章！", "技术深度")).toBe(
-      "2026-05-07-AB技术文章.md"
+      "2026-05-07-AB 技术文章.md"
     );
   });
 
