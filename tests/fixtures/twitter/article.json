@@ -1,0 +1,25 @@
+{
+  "tweet": {
+    "id": "123",
+    "text": "短推文 fallback",
+    "author": {
+      "name": "Example Author",
+      "screen_name": "example"
+    },
+    "created_timestamp": "2026-05-07T10:00:00.000Z",
+    "likes": 12,
+    "retweets": 3,
+    "replies": 1,
+    "views": 1000,
+    "article": {
+      "content": {
+        "blocks": [
+          { "type": "header-one", "text": "Agent 长文标题" },
+          { "type": "unstyled", "text": "第一段介绍 Agent 架构。" },
+          { "type": "unordered-list-item", "text": "稳定 JSON 输出" },
+          { "type": "unordered-list-item", "text": "可靠 Obsidian 保存" }
+        ]
+      }
+    }
+  }
+}
