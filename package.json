@@ -7,7 +7,7 @@
     "link-processing": "./dist/cli/index.js"
   },
   "scripts": {
-    "build": "tsup src/cli/index.ts --format esm --dts --clean --out-dir dist",
+    "build": "tsup src/cli/index.ts --format esm --dts --clean --out-dir dist/cli",
     "dev": "tsx src/cli/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
