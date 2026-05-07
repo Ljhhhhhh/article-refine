@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Command } from "commander";
 import { registerInspectCommand } from "./commands/inspect.js";
+import { registerProcessCommand } from "./commands/process.js";
 import { registerRouteCommand } from "./commands/route.js";
 
 export function createProgram(): Command {
@@ -13,10 +14,7 @@ export function createProgram(): Command {
 
   registerRouteCommand(program);
   registerInspectCommand(program);
-
-  program.command("process").argument("<url>").action(() => {
-    throw new Error("process command is not registered yet");
-  });
+  registerProcessCommand(program);
 
   program.command("config").argument("<action>").action(() => {
     throw new Error("config command is not registered yet");
