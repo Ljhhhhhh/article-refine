@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { Command } from "commander";
+import { registerRouteCommand } from "./commands/route.js";
 
 export function createProgram(): Command {
   const program = new Command();
@@ -9,9 +10,7 @@ export function createProgram(): Command {
     .description("Process links into Obsidian-ready Markdown notes")
     .version("0.1.0");
 
-  program.command("route").argument("<url>").action(() => {
-    throw new Error("route command is not registered yet");
-  });
+  registerRouteCommand(program);
 
   program.command("inspect").argument("<url>").action(() => {
     throw new Error("inspect command is not registered yet");
