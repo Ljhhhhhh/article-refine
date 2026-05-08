@@ -20,6 +20,9 @@ importers:
       jsdom:
         specifier: latest
         version: 29.1.1
+      openai:
+        specifier: ^6.37.0
+        version: 6.37.0(zod@4.4.3)
       yaml:
         specifier: latest
         version: 2.8.4
@@ -899,6 +902,18 @@ packages:
 
   obug@2.1.1:
     resolution: {integrity: sha512-uTqF9MuPraAQ+IsnPf366RG4cP9RtUi7MLO1N3KEc+wb0a6yKpeL0lmk2IB1jY5KHPAlTc6T/JRdC/YqxHNwkQ==}
+
+  openai@6.37.0:
+    resolution: {integrity: sha512-0H5dEGFmmLv6KSd0W1w2nyL8WsLkX6yoLeQpU+dZAOuGcany5qkYQMmj35ZrKgb6yiyYqpUzFOpR8mZQkgqeEQ==}
+    hasBin: true
+    peerDependencies:
+      ws: ^8.18.0
+      zod: ^3.25 || ^4.0
+    peerDependenciesMeta:
+      ws:
+        optional: true
+      zod:
+        optional: true
 
   parse5-htmlparser2-tree-adapter@7.1.0:
     resolution: {integrity: sha512-ruw5xyKs6lrpo9x9rCZqZZnIUntICjQAd0Wsmp396Ul9lN/h+ifgVV1x1gZHi8euej6wTfpqX8j+BFQxF0NS/g==}
@@ -1909,6 +1924,10 @@ snapshots:
   object-assign@4.1.1: {}
 
   obug@2.1.1: {}
+
+  openai@6.37.0(zod@4.4.3):
+    optionalDependencies:
+      zod: 4.4.3
 
   parse5-htmlparser2-tree-adapter@7.1.0:
     dependencies:

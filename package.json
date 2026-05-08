@@ -18,6 +18,7 @@
     "cheerio": "latest",
     "commander": "latest",
     "jsdom": "latest",
+    "openai": "^6.37.0",
     "yaml": "latest",
     "zod": "latest"
   },

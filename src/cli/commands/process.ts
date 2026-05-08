@@ -2,7 +2,7 @@ import type { Command } from "commander";
 import { processLink } from "../../core/process-link.js";
 import { WebFetcher } from "../../fetchers/web-fetcher.js";
 import { TwitterFetcher } from "../../fetchers/twitter-fetcher.js";
-import { MockNoteExtractor } from "../../llm/note-extractor.js";
+import { createExtractor } from "../../llm/factory.js";
 import { renderHumanProcessResult } from "../presenters/human.js";
 import { renderJson } from "../presenters/json.js";
 
@@ -12,7 +12,10 @@ export function registerProcessCommand(program: Command): void {
     .argument("<url>")
     .option("--json", "print machine-readable JSON")
     .option("--vault <path>", "Obsidian vault path")
-    .action(async (url: string, options: { json?: boolean; vault?: string }) => {
+    .option("--llm-provider <provider>", "LLM provider (mock|openai)", "mock")
+    .option("--llm-model <model>", "LLM model name")
+    .option("--llm-base-url <url>", "OpenAI-compatible API base URL")
+    .action(async (url: string, options: { json?: boolean; vault?: string; llmProvider?: string; llmModel?: string; llmBaseUrl?: string }) => {
       const vaultPath = options.vault ?? process.env.LINK_PROCESSING_VAULT;
       if (!vaultPath) {
         const failure = {
@@ -30,10 +33,38 @@ export function registerProcessCommand(program: Command): void {
         return;
       }
 
+      const provider = options.llmProvider ?? process.env.LINK_PROCESSING_LLM_PROVIDER ?? "mock";
+      const model = options.llmModel ?? process.env.LINK_PROCESSING_LLM_MODEL ?? "gpt-4o";
+
+      let extractor;
+      try {
+        extractor = createExtractor({
+          provider: provider as "mock" | "openai",
+          model,
+          baseUrl: options.llmBaseUrl ?? process.env.OPENAI_BASE_URL,
+          apiKey: process.env.OPENAI_API_KEY
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Extractor creation failed.";
+        const failure = {
+          ok: false,
+          command: "process",
+          sourceUrl: url,
+          error: {
+            code: "LLM_OUTPUT_INVALID",
+            message,
+            retryable: false
+          }
+        };
+        process.stdout.write(options.json ? renderJson(failure) : `Error: ${message}\n`);
+        process.exitCode = 4;
+        return;
+      }
+
       const result = await processLink(url, {
         vaultPath,
         fetchers: [new TwitterFetcher(), new WebFetcher()],
-        extractor: new MockNoteExtractor(),
+        extractor,
         qualityThreshold: 300
       });
 
