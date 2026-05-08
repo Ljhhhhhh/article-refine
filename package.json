@@ -17,6 +17,7 @@
     "@mozilla/readability": "latest",
     "cheerio": "latest",
     "commander": "latest",
+    "dotenv": "^17.4.2",
     "jsdom": "latest",
     "openai": "^6.37.0",
     "yaml": "latest",

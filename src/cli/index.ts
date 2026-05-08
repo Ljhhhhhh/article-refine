@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import "dotenv/config";
 import { Command } from "commander";
 import { registerInspectCommand } from "./commands/inspect.js";
 import { registerConfigCommand } from "./commands/config.js";
