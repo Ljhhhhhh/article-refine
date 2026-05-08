@@ -2,6 +2,7 @@ import { Readability } from "@mozilla/readability";
 import * as cheerio from "cheerio";
 import { JSDOM } from "jsdom";
 import type { ContentFetcher, FetchContext, FetchedContent } from "./fetcher.js";
+import { proxyFetch } from "./proxy-fetch.js";
 
 export function extractReadableHtml(sourceUrl: string, html: string): FetchedContent {
   const dom = new JSDOM(html, { url: sourceUrl });
@@ -31,7 +32,7 @@ export class WebFetcher implements ContentFetcher {
   }
 
   async fetch(context: FetchContext): Promise<FetchedContent> {
-    const response = await fetch(context.sourceUrl);
+    const response = await proxyFetch(context.sourceUrl);
     if (!response.ok) {
       throw new Error(`HTTP ${response.status} while fetching ${context.sourceUrl}`);
     }

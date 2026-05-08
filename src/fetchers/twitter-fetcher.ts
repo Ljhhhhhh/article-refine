@@ -1,4 +1,5 @@
 import type { ContentFetcher, FetchContext, FetchedContent } from "./fetcher.js";
+import { proxyFetch } from "./proxy-fetch.js";
 
 type TwitterBlock = {
   type?: string;
@@ -68,7 +69,7 @@ export class TwitterFetcher implements ContentFetcher {
   }
 
   async fetch(context: FetchContext): Promise<FetchedContent> {
-    const response = await fetch(toFxTwitterUrl(context.sourceUrl));
+    const response = await proxyFetch(toFxTwitterUrl(context.sourceUrl));
     if (!response.ok) {
       throw new Error(`HTTP ${response.status} while fetching ${context.sourceUrl}`);
     }

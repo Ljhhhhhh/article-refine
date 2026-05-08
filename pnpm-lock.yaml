@@ -26,6 +26,9 @@ importers:
       openai:
         specifier: ^6.37.0
         version: 6.37.0(zod@4.4.3)
+      undici:
+        specifier: ^8.2.0
+        version: 8.2.0
       yaml:
         specifier: latest
         version: 2.8.4
@@ -1126,6 +1129,10 @@ packages:
     resolution: {integrity: sha512-xXnp4kTyor2Zq+J1FfPI6Eq3ew5h6Vl0F/8d9XU5zZQf1tX9s2Su1/3PiMmUANFULpmksxkClamIZcaUqryHsQ==}
     engines: {node: '>=20.18.1'}
 
+  undici@8.2.0:
+    resolution: {integrity: sha512-Z+4Hx9GE26Lh9Upwfnc8C7SsrpBPGaM/Gm6kMFtiG7c+5IvQKlXi/t+9x9DrrCh29cww5TSP9YdVaBcnLDs5fQ==}
+    engines: {node: '>=22.19.0'}
+
   vite@8.0.11:
     resolution: {integrity: sha512-Jz1mxtUBR5xTT65VOdJZUUeoyLtqljmFkiUXhPTLZka3RDc9vpi/xXkyrnsdRcm2lIi3l3GPMnAidTsEGIj3Ow==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -2159,6 +2166,8 @@ snapshots:
   undici-types@7.25.0: {}
 
   undici@7.25.0: {}
+
+  undici@8.2.0: {}
 
   vite@8.0.11(@types/node@25.6.0)(esbuild@0.27.7)(tsx@4.21.0)(yaml@2.8.4):
     dependencies:

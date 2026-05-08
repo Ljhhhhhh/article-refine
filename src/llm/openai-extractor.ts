@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { AppError } from "../errors/errors.js";
+import { proxyFetch } from "../fetchers/proxy-fetch.js";
 import type { ExtractNoteInput, NoteExtractor } from "./note-extractor.js";
 import { processedNoteSchema, type ProcessedNote } from "./schema.js";
 
@@ -33,7 +34,8 @@ export class OpenAINoteExtractor implements NoteExtractor {
   constructor(options: OpenAIExtractorOptions) {
     this.client = new OpenAI({
       apiKey: options.apiKey,
-      baseURL: options.baseUrl
+      baseURL: options.baseUrl,
+      fetch: proxyFetch as typeof fetch
     });
     this.model = options.model;
     this.maxTokens = options.maxTokens ?? 4096;

@@ -1,7 +1,20 @@
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createProgram } from "../../src/cli/index.js";
 
 describe("process command", () => {
+  let savedVault: string | undefined;
+
+  beforeEach(() => {
+    savedVault = process.env.LINK_PROCESSING_VAULT;
+    delete process.env.LINK_PROCESSING_VAULT;
+  });
+
+  afterEach(() => {
+    if (savedVault !== undefined) {
+      process.env.LINK_PROCESSING_VAULT = savedVault;
+    }
+  });
+
   test("returns JSON config error when vault is missing", async () => {
     const writeSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
     const program = createProgram();
