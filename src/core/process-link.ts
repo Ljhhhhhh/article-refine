@@ -27,6 +27,7 @@ export type ProcessOptions = {
   extractor: NoteExtractor;
   qualityThreshold: number;
   now?: () => Date;
+  onProgress?: (step: string) => void;
 };
 
 export async function processLink(sourceUrl: string, options: ProcessOptions): Promise<ProcessResult> {
@@ -36,11 +37,13 @@ export async function processLink(sourceUrl: string, options: ProcessOptions): P
   }
 
   try {
+    options.onProgress?.("fetching");
     const fetched = await new CompositeFetcher(options.fetchers).fetch(routed);
     if (routed.linkType !== "video" && fetched.rawText.length < options.qualityThreshold) {
       throw new AppError("CONTENT_TOO_SHORT", "Fetched content is below the quality threshold.");
     }
 
+    options.onProgress?.("extracting");
     const note = await options.extractor.extract({
       sourceUrl,
       linkType: routed.linkType,
@@ -56,6 +59,7 @@ export async function processLink(sourceUrl: string, options: ProcessOptions): P
       createdAt: now(),
       fetchedAt: now()
     });
+    options.onProgress?.("saving");
     const obsidian = await saveObsidianNote({
       vaultPath: options.vaultPath,
       title: note.title,

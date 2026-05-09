@@ -38,6 +38,18 @@ export function registerProcessCommand(program: Command): void {
       const provider = options.llmProvider ?? process.env.LINK_PROCESSING_LLM_PROVIDER ?? "two-step";
       const model = options.llmModel ?? process.env.LINK_PROCESSING_LLM_MODEL ?? "gpt-4o";
 
+      const onProgress = options.json
+        ? undefined
+        : (step: string) => {
+            const labels: Record<string, string> = {
+              fetching: "正在抓取内容...",
+              analyzing: "Step 1: 分析内容...",
+              generating: "Step 2: 生成笔记...",
+              saving: "保存到 Obsidian..."
+            };
+            process.stderr.write(`  ${labels[step] ?? step}\n`);
+          };
+
       let extractor;
       try {
         extractor = createExtractor({
@@ -46,7 +58,8 @@ export function registerProcessCommand(program: Command): void {
           baseUrl: options.llmBaseUrl ?? process.env.OPENAI_BASE_URL,
           apiKey: process.env.OPENAI_API_KEY,
           step1Model: options.step1Model,
-          step2Model: options.step2Model
+          step2Model: options.step2Model,
+          onProgress
         });
       } catch (error) {
         const message = error instanceof Error ? error.message : "Extractor creation failed.";
@@ -69,7 +82,8 @@ export function registerProcessCommand(program: Command): void {
         vaultPath,
         fetchers: [new TwitterFetcher(), new WebFetcher()],
         extractor,
-        qualityThreshold: 300
+        qualityThreshold: 300,
+        onProgress
       });
 
       process.stdout.write(
