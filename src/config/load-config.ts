@@ -23,7 +23,8 @@ export function defaultConfig(vaultPath: string): LinkProcessingConfig {
     },
     llm: {
       provider: "mock",
-      model: "mock"
+      model: "mock",
+      longContentThreshold: 32000
     },
     logging: {
       level: "info"

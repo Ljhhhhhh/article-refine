@@ -27,7 +27,7 @@ export function extractJson(text: string): unknown {
       try {
         const parsed = JSON.parse(candidate);
         if (typeof parsed === "object" && parsed !== null) {
-          if ("title" in parsed && "summary" in parsed) {
+          if ("title" in parsed && "body" in parsed) {
             return parsed;
           }
           candidates.push(parsed);

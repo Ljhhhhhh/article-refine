@@ -10,8 +10,7 @@
     "resolveJsonModule": true,
     "outDir": "dist",
     "rootDir": ".",
-    "types": ["node", "vitest/globals"],
-    "ignoreDeprecations": "6.0"
+    "types": ["node", "vitest/globals"]
   },
   "include": ["src/**/*.ts", "tests/**/*.ts", "vitest.config.ts"]
 }

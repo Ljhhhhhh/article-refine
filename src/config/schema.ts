@@ -18,10 +18,13 @@ export const configSchema = z.object({
     retryCount: z.number().int().nonnegative().default(3)
   }),
   llm: z.object({
-    provider: z.enum(["mock", "two-step"]).default("two-step"),
+    provider: z.enum(["mock", "draft-revise", "two-step"]).default("draft-revise"),
     model: z.string().default("mock"),
+    draftModel: z.string().optional(),
+    reviseModel: z.string().optional(),
     baseUrl: z.string().url().optional(),
-    apiKey: z.string().optional()
+    apiKey: z.string().optional(),
+    longContentThreshold: z.number().int().positive().default(32000)
   }),
   logging: z.object({
     level: z.enum(["debug", "info", "warn", "error"]).default("info")
