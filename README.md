@@ -87,6 +87,29 @@ link-processing process <url> --skip-existing
 link-processing process <url> --update-existing
 ```
 
+## OSS / S3-compatible Mirror
+
+When OSS credentials are present in the environment, each processed note is mirrored to the configured bucket after the local save. Local files remain the source of truth; the source index is local-only.
+
+Minimum env vars:
+
+- `OSS_ENDPOINT` (S3-compatible, e.g. `https://s3.oss-cn-hangzhou.aliyuncs.com`)
+- `OSS_REGION`
+- `OSS_BUCKET`
+- `OSS_ACCESS_KEY_ID`
+- `OSS_SECRET_ACCESS_KEY`
+
+Optional:
+
+- `OSS_PREFIX` - bucket path prefix
+- `OSS_FORCE_PATH_STYLE` - needed for bucket names with underscores or MinIO/R2
+- `OSS_STRICT` - when `true`, an upload failure fails the whole process run
+- `--no-oss` on `process` - one-shot disable
+
+OSS uploads are best-effort by default: on failure the local note is still saved and the result JSON includes `oss.uploaded=false`. Run `link-processing doctor` to verify bucket connectivity.
+
+Works with any S3-compatible service (AWS S3, MinIO, Cloudflare R2, Tencent COS, Qiniu Kodo) by pointing `OSS_ENDPOINT` at that service.
+
 ## Troubleshooting
 
 Run:
