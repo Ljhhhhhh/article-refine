@@ -14,6 +14,9 @@ export function getExitCodeForErrorCode(code: AppErrorCode): number {
     case "OBSIDIAN_CONFIG_MISSING":
     case "OBSIDIAN_WRITE_FAILED":
       return 5;
+    case "OSS_CONFIG_INVALID":
+    case "OSS_UPLOAD_FAILED":
+      return 6;
     case "UNKNOWN_ERROR":
       return 1;
   }

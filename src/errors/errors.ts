@@ -7,6 +7,8 @@ export type AppErrorCode =
   | "LLM_OUTPUT_INVALID"
   | "OBSIDIAN_CONFIG_MISSING"
   | "OBSIDIAN_WRITE_FAILED"
+  | "OSS_UPLOAD_FAILED"
+  | "OSS_CONFIG_INVALID"
   | "UNKNOWN_ERROR";
 
 export class AppError extends Error {
