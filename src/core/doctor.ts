@@ -1,6 +1,7 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { resolveProcessConfig } from "../config/resolve-config.js";
+import { OssUploader } from "../storage/oss-uploader.js";
 import { listLinkCapabilities } from "../router/capabilities.js";
 
 export type DoctorCheck = {
@@ -87,6 +88,56 @@ export async function runDoctor(input: { configPath?: string }): Promise<DoctorR
           ? "Mock provider does not call an LLM."
           : "API key configured."
     });
+  }
+
+  const oss = resolved.config.storage.oss;
+  if (!oss.enabled) {
+    checks.push({
+      id: "oss",
+      label: "OSS mirror",
+      status: "warn",
+      message: "OSS mirror is not configured; notes are saved locally only."
+    });
+  } else if (
+    !oss.endpoint ||
+    !oss.region ||
+    !oss.bucket ||
+    !oss.accessKeyId ||
+    !oss.secretAccessKey
+  ) {
+    checks.push({
+      id: "oss",
+      label: "OSS mirror",
+      status: "fail",
+      message:
+        "OSS is enabled but endpoint, region, bucket, and credentials must all be provided."
+    });
+  } else {
+    try {
+      const uploader = new OssUploader({
+        endpoint: oss.endpoint,
+        region: oss.region,
+        bucket: oss.bucket,
+        prefix: oss.prefix,
+        accessKeyId: oss.accessKeyId,
+        secretAccessKey: oss.secretAccessKey,
+        forcePathStyle: oss.forcePathStyle
+      });
+      await uploader.head();
+      checks.push({
+        id: "oss",
+        label: "OSS mirror",
+        status: "pass",
+        message: `Bucket reachable: ${oss.bucket} @ ${oss.endpoint}`
+      });
+    } catch (error) {
+      checks.push({
+        id: "oss",
+        label: "OSS mirror",
+        status: "fail",
+        message: error instanceof Error ? error.message : "OSS head bucket failed."
+      });
+    }
   }
 
   const capabilities = listLinkCapabilities();
