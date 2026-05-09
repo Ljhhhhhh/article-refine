@@ -1,5 +1,6 @@
 export type AppErrorCode =
   | "INVALID_URL"
+  | "INVALID_OPTIONS"
   | "UNSUPPORTED_URL"
   | "FETCH_FAILED"
   | "CONTENT_TOO_SHORT"

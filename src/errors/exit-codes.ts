@@ -3,6 +3,7 @@ import type { AppErrorCode } from "./errors.js";
 export function getExitCodeForErrorCode(code: AppErrorCode): number {
   switch (code) {
     case "INVALID_URL":
+    case "INVALID_OPTIONS":
     case "UNSUPPORTED_URL":
       return 2;
     case "FETCH_FAILED":

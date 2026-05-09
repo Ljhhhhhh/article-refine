@@ -62,10 +62,20 @@ export function registerProcessCommand(program: Command): void {
         const config = resolved.config;
 
         if (options.skipExisting && options.updateExisting) {
+          const failure = {
+            ok: false,
+            command: "process",
+            sourceUrl: url,
+            error: {
+              code: "INVALID_OPTIONS",
+              message: "Cannot use --skip-existing and --update-existing together.",
+              retryable: false
+            }
+          };
           process.stdout.write(
             options.json
-              ? JSON.stringify({ ok: false, error: { code: "INVALID_OPTIONS", message: "Cannot use --skip-existing and --update-existing together." } })
-              : "Error: Cannot use --skip-existing and --update-existing together.\n"
+              ? renderJson(failure)
+              : `Error: ${failure.error.message}\n`
           );
           process.exitCode = 2;
           return;

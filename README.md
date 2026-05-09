@@ -96,3 +96,47 @@ link-processing doctor
 ```
 
 Doctor checks config loading, vault writability, provider setup, API key presence, and supported link capabilities.
+
+```mermaid
+flowchart TD
+   A["process &lt;url&gt;"] --> B["resolveProcessConfig()"]
+   B -->|ok=false| B1["输出配置错误 → exitCode=5"]
+   B -->|ok| C{"--skip-existing 且\n--update-existing 同时使用?"}
+   C -->|是| C1["输出 INVALID_OPTIONS → exitCode=2"]
+   C -->|否| D["createExtractor(llmConfig)"]
+   D -->|异常| D1["输出 LLM 错误 → exitCode=4"]
+   D -->|ok| E["processLink(url, options)"]
+
+   E --> F["routeLink(sourceUrl)"]
+   F -->|失败| F1["返回 FailureResult"]
+   F -->|ok| G["findSourceIndexEntry(vaultPath, url)"]
+
+   G --> H{"已存在 且 policy=skip?"}
+   H -->|是| H1["返回 SkippedResult\n(SOURCE_ALREADY_EXISTS)"]
+   H -->|否| I["CompositeFetcher.fetch(routed)"]
+
+   I --> J{"非 video 且\nrawText < qualityThreshold?"}
+   J -->|是| J1["抛出 CONTENT_TOO_SHORT"]
+   J -->|否| K["DraftReviseExtractor.extract()"]
+
+   K --> L["compressIfLong(rawText)\n超长内容压缩 (Pass 0)"]
+   L --> M["DraftGenerator.generate()\nPass 1: 起草笔记"]
+   M --> N{"skipRevise?"}
+   N -->|是| N1["直接返回 draft"]
+   N -->|否| O["Reviser.revise()\nPass 2: 对照原文修订"]
+
+   O --> P["renderStandardTemplate()\n渲染 Markdown"]
+   P --> Q["saveObsidianNote()\n保存到 Obsidian vault"]
+   Q --> R["upsertSourceIndexEntry()\n更新索引"]
+   R --> S["返回 ProcessSuccessResult"]
+
+   S --> T{"--json?"}
+   T -->|是| T1["renderJson()"]
+   T -->|否| T2["renderHumanProcessResult()"]
+   T1 --> U["stdout 输出"]
+   T2 --> U
+
+   F1 --> V["toFailureResult()"]
+   J1 --> V
+   V --> W["输出错误 → exitCode=1"]
+```

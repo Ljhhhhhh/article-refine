@@ -5,6 +5,7 @@ describe("getExitCodeForErrorCode", () => {
   test("maps URL errors to exit code 2", () => {
     expect(getExitCodeForErrorCode("INVALID_URL")).toBe(2);
     expect(getExitCodeForErrorCode("UNSUPPORTED_URL")).toBe(2);
+    expect(getExitCodeForErrorCode("INVALID_OPTIONS")).toBe(2);
   });
 
   test("maps fetch and content errors to exit code 3", () => {

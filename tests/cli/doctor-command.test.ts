@@ -6,12 +6,22 @@ import { createProgram } from "../../src/cli/index.js";
 import { writeDefaultConfig } from "../../src/config/load-config.js";
 
 let tempDir: string;
+const savedEnv = { ...process.env };
 
 beforeEach(async () => {
   tempDir = await mkdtemp(path.join(os.tmpdir(), "link-processing-doctor-cli-"));
+  process.env = { ...savedEnv };
+  delete process.env.LINK_PROCESSING_VAULT;
+  delete process.env.LINK_PROCESSING_LLM_PROVIDER;
+  delete process.env.LINK_PROCESSING_LLM_MODEL;
+  delete process.env.LINK_PROCESSING_DRAFT_MODEL;
+  delete process.env.LINK_PROCESSING_REVISE_MODEL;
+  delete process.env.OPENAI_BASE_URL;
+  delete process.env.OPENAI_API_KEY;
 });
 
 afterEach(async () => {
+  process.env = { ...savedEnv };
   await rm(tempDir, { recursive: true, force: true });
 });
 
