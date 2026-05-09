@@ -42,9 +42,9 @@ describe("processLink", () => {
     if (result.ok) {
       expect(result.command).toBe("process");
       expect(result.linkType).toBe("tech_blog");
-      expect(result.contentType).toBe("技术深度");
+      expect(result.contentType).toBe("综合");
       expect(result.obsidian.saved).toBe(true);
-      expect(result.obsidian.path).toContain(path.join("文章摘要", "技术深度"));
+      expect(result.obsidian.path).toContain(path.join("文章摘要", "综合"));
       await expect(readFile(result.obsidian.path, "utf8")).resolves.toContain("# Agent 工程文章");
     }
   });
