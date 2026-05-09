@@ -30,6 +30,15 @@ export function defaultConfig(vaultPath: string): LinkProcessingConfig {
     },
     logging: {
       level: "info"
+    },
+    storage: {
+      oss: {
+        enabled: false,
+        prefix: "",
+        forcePathStyle: false,
+        mode: "mirror",
+        strict: false
+      }
     }
   };
 }

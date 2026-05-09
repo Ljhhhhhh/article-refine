@@ -6,6 +6,39 @@ export const normalizedLlmProviderSchema = z
     provider === "openai" ? "draft-revise" : provider
   );
 
+export const ossConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  endpoint: z.string().url().optional(),
+  region: z.string().optional(),
+  bucket: z.string().optional(),
+  prefix: z.string().default(""),
+  accessKeyId: z.string().optional(),
+  secretAccessKey: z.string().optional(),
+  forcePathStyle: z.boolean().default(false),
+  mode: z.enum(["mirror", "only"]).default("mirror"),
+  strict: z.boolean().default(false)
+});
+
+export const storageConfigSchema = z
+  .object({
+    oss: ossConfigSchema.default({
+      enabled: false,
+      prefix: "",
+      forcePathStyle: false,
+      mode: "mirror",
+      strict: false
+    })
+  })
+  .default({
+    oss: {
+      enabled: false,
+      prefix: "",
+      forcePathStyle: false,
+      mode: "mirror",
+      strict: false
+    }
+  });
+
 export const configSchema = z.object({
   obsidian: z.object({
     vaultPath: z.string().min(1),
@@ -34,7 +67,8 @@ export const configSchema = z.object({
   }),
   logging: z.object({
     level: z.enum(["debug", "info", "warn", "error"]).default("info")
-  })
+  }),
+  storage: storageConfigSchema
 });
 
 export type LinkProcessingConfig = z.infer<typeof configSchema>;

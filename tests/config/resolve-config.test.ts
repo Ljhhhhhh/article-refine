@@ -18,6 +18,15 @@ beforeEach(async () => {
   delete process.env.LINK_PROCESSING_REVISE_MODEL;
   delete process.env.OPENAI_BASE_URL;
   delete process.env.OPENAI_API_KEY;
+  delete process.env.OSS_ENDPOINT;
+  delete process.env.OSS_REGION;
+  delete process.env.OSS_BUCKET;
+  delete process.env.OSS_ACCESS_KEY_ID;
+  delete process.env.OSS_SECRET_ACCESS_KEY;
+  delete process.env.OSS_PREFIX;
+  delete process.env.OSS_FORCE_PATH_STYLE;
+  delete process.env.OSS_MODE;
+  delete process.env.OSS_STRICT;
 });
 
 afterEach(async () => {
@@ -85,5 +94,56 @@ describe("resolveProcessConfig", () => {
     await resolveProcessConfig({ configPath, cli: { vaultPath: path.join(tempDir, "vault") } });
 
     await expect(readFile(configPath, "utf8")).rejects.toThrow();
+  });
+});
+
+describe("resolveProcessConfig OSS", () => {
+  test("keeps storage.oss.enabled false when no OSS env is set", async () => {
+    const configPath = path.join(tempDir, "link-processing.config.yaml");
+    await writeDefaultConfig(configPath, tempDir);
+
+    const resolved = await resolveProcessConfig({ configPath, cli: {} });
+
+    expect(resolved.ok).toBe(true);
+    if (resolved.ok) {
+      expect(resolved.config.storage.oss.enabled).toBe(false);
+    }
+  });
+
+  test("enables OSS when endpoint, region, bucket, and credentials are in env", async () => {
+    const configPath = path.join(tempDir, "link-processing.config.yaml");
+    await writeDefaultConfig(configPath, tempDir);
+    process.env.OSS_ENDPOINT = "https://s3.oss-cn-hangzhou.aliyuncs.com";
+    process.env.OSS_REGION = "cn-hangzhou";
+    process.env.OSS_BUCKET = "my-bucket";
+    process.env.OSS_ACCESS_KEY_ID = "id";
+    process.env.OSS_SECRET_ACCESS_KEY = "secret";
+    process.env.OSS_PREFIX = "link-processing/";
+
+    const resolved = await resolveProcessConfig({ configPath, cli: {} });
+
+    expect(resolved.ok).toBe(true);
+    if (resolved.ok) {
+      expect(resolved.config.storage.oss.enabled).toBe(true);
+      expect(resolved.config.storage.oss.bucket).toBe("my-bucket");
+      expect(resolved.config.storage.oss.prefix).toBe("link-processing/");
+      expect(resolved.config.storage.oss.mode).toBe("mirror");
+      expect(resolved.config.storage.oss.strict).toBe(false);
+    }
+  });
+
+  test("fails with OSS_CONFIG_INVALID when OSS env is partially set", async () => {
+    const configPath = path.join(tempDir, "link-processing.config.yaml");
+    await writeDefaultConfig(configPath, tempDir);
+    process.env.OSS_ENDPOINT = "https://s3.oss-cn-hangzhou.aliyuncs.com";
+    process.env.OSS_BUCKET = "my-bucket";
+
+    const resolved = await resolveProcessConfig({ configPath, cli: {} });
+
+    expect(resolved.ok).toBe(false);
+    if (!resolved.ok) {
+      expect(resolved.error.code).toBe("OSS_CONFIG_INVALID");
+      expect(resolved.error.message).toMatch(/OSS_REGION|OSS_ACCESS_KEY_ID|OSS_SECRET_ACCESS_KEY/);
+    }
   });
 });

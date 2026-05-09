@@ -30,6 +30,42 @@ async function fileExists(filePath: string): Promise<boolean> {
   }
 }
 
+function readOssEnv(current: LinkProcessingConfig["storage"]["oss"]): LinkProcessingConfig["storage"]["oss"] {
+  const any =
+    process.env.OSS_ENDPOINT ||
+    process.env.OSS_REGION ||
+    process.env.OSS_BUCKET ||
+    process.env.OSS_ACCESS_KEY_ID ||
+    process.env.OSS_SECRET_ACCESS_KEY ||
+    process.env.OSS_PREFIX ||
+    process.env.OSS_FORCE_PATH_STYLE ||
+    process.env.OSS_MODE ||
+    process.env.OSS_STRICT;
+
+  if (!any) return current;
+
+  return {
+    ...current,
+    enabled: true,
+    endpoint: process.env.OSS_ENDPOINT ?? current.endpoint,
+    region: process.env.OSS_REGION ?? current.region,
+    bucket: process.env.OSS_BUCKET ?? current.bucket,
+    accessKeyId: process.env.OSS_ACCESS_KEY_ID ?? current.accessKeyId,
+    secretAccessKey: process.env.OSS_SECRET_ACCESS_KEY ?? current.secretAccessKey,
+    prefix: process.env.OSS_PREFIX ?? current.prefix,
+    forcePathStyle:
+      process.env.OSS_FORCE_PATH_STYLE != null
+        ? process.env.OSS_FORCE_PATH_STYLE === "true"
+        : current.forcePathStyle,
+    mode:
+      process.env.OSS_MODE === "only" || process.env.OSS_MODE === "mirror"
+        ? process.env.OSS_MODE
+        : current.mode,
+    strict:
+      process.env.OSS_STRICT != null ? process.env.OSS_STRICT === "true" : current.strict
+  };
+}
+
 function applyEnv(config: LinkProcessingConfig): LinkProcessingConfig {
   return configSchema.parse({
     ...config,
@@ -45,6 +81,10 @@ function applyEnv(config: LinkProcessingConfig): LinkProcessingConfig {
       reviseModel: process.env.LINK_PROCESSING_REVISE_MODEL ?? config.llm.reviseModel,
       baseUrl: process.env.OPENAI_BASE_URL ?? config.llm.baseUrl,
       apiKey: process.env.OPENAI_API_KEY ?? config.llm.apiKey
+    },
+    storage: {
+      ...config.storage,
+      oss: readOssEnv(config.storage.oss)
     }
   });
 }
@@ -95,6 +135,21 @@ export async function resolveProcessConfig(input: {
         "OBSIDIAN_CONFIG_MISSING",
         `Provide --vault, LINK_PROCESSING_VAULT, or obsidian.vaultPath in ${DEFAULT_CONFIG_PATH}.`
       );
+    }
+
+    if (config.storage.oss.enabled) {
+      const missing: string[] = [];
+      if (!config.storage.oss.endpoint) missing.push("OSS_ENDPOINT");
+      if (!config.storage.oss.region) missing.push("OSS_REGION");
+      if (!config.storage.oss.bucket) missing.push("OSS_BUCKET");
+      if (!config.storage.oss.accessKeyId) missing.push("OSS_ACCESS_KEY_ID");
+      if (!config.storage.oss.secretAccessKey) missing.push("OSS_SECRET_ACCESS_KEY");
+      if (missing.length > 0) {
+        throw new AppError(
+          "OSS_CONFIG_INVALID",
+          `OSS is enabled but required fields are missing: ${missing.join(", ")}.`
+        );
+      }
     }
 
     return {
