@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+export const normalizedLlmProviderSchema = z
+  .enum(["mock", "draft-revise", "two-step", "openai"])
+  .transform((provider): "mock" | "draft-revise" | "two-step" =>
+    provider === "openai" ? "draft-revise" : provider
+  );
+
 export const configSchema = z.object({
   obsidian: z.object({
     vaultPath: z.string().min(1),
@@ -18,7 +24,7 @@ export const configSchema = z.object({
     retryCount: z.number().int().nonnegative().default(3)
   }),
   llm: z.object({
-    provider: z.enum(["mock", "draft-revise", "two-step"]).default("draft-revise"),
+    provider: normalizedLlmProviderSchema.default("draft-revise"),
     model: z.string().default("mock"),
     draftModel: z.string().optional(),
     reviseModel: z.string().optional(),

@@ -33,4 +33,20 @@ describe("config helpers", () => {
 
     expect(result.ok).toBe(true);
   });
+
+  test("normalizes openai provider alias to draft-revise", async () => {
+    const configPath = path.join(tempDir, "link-processing.config.yaml");
+    await writeDefaultConfig(configPath, tempDir);
+    const raw = await readFile(configPath, "utf8");
+    await import("node:fs/promises").then(({ writeFile }) =>
+      writeFile(configPath, raw.replace("provider: mock", "provider: openai"), "utf8")
+    );
+
+    const result = await checkConfig(configPath);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.config.llm.provider).toBe("draft-revise");
+    }
+  });
 });

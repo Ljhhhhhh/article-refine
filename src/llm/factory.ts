@@ -3,14 +3,27 @@ import type { NoteExtractor } from "./note-extractor.js";
 import { MockNoteExtractor } from "./note-extractor.js";
 import { DraftReviseExtractor, type DraftReviseExtractorOptions } from "./draft-revise-extractor.js";
 
-export type CreateExtractorInput = LinkProcessingConfig["llm"] & {
+export type RawLlmProvider = "mock" | "draft-revise" | "two-step" | "openai" | string;
+
+function normalizeProvider(provider: RawLlmProvider): "mock" | "draft-revise" | "two-step" {
+  if (provider === "openai") return "draft-revise";
+  if (provider === "mock" || provider === "draft-revise" || provider === "two-step") {
+    return provider;
+  }
+  throw new Error(
+    `Unsupported LLM provider "${provider}". Supported providers: mock, draft-revise, two-step.`
+  );
+}
+
+export type CreateExtractorInput = Omit<LinkProcessingConfig["llm"], "provider"> & {
+  provider: RawLlmProvider;
   draftModel?: string;
   reviseModel?: string;
   onProgress?: (step: string) => void;
 };
 
 export function createExtractor(llmConfig: CreateExtractorInput): NoteExtractor {
-  const provider = llmConfig.provider;
+  const provider = normalizeProvider(llmConfig.provider);
 
   // "two-step" is kept as a backward-compatible alias for "draft-revise"
   if (provider === "draft-revise" || provider === "two-step") {
@@ -40,5 +53,9 @@ export function createExtractor(llmConfig: CreateExtractorInput): NoteExtractor 
     return new DraftReviseExtractor(options);
   }
 
-  return new MockNoteExtractor();
+  if (provider === "mock") {
+    return new MockNoteExtractor();
+  }
+
+  throw new Error(`Unsupported LLM provider "${provider}".`);
 }
