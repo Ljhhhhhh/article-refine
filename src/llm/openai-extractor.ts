@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { AppError } from "../errors/errors.js";
 import { proxyFetch } from "../fetchers/proxy-fetch.js";
+import { extractJson } from "./extract-json.js";
 import type { ExtractNoteInput, NoteExtractor } from "./note-extractor.js";
 import { processedNoteSchema, type ProcessedNote } from "./schema.js";
 
@@ -66,13 +67,9 @@ export class OpenAINoteExtractor implements NoteExtractor {
         response_format: { type: "json_object" }
       });
 
-      const text = response.choices[0]?.message?.content ?? "";
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new AppError("LLM_OUTPUT_INVALID", "LLM response did not contain JSON.");
-      }
-
-      const parsed = JSON.parse(jsonMatch[0]);
+      const raw = response.choices[0]?.message?.content ?? "";
+      const text = raw.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+      const parsed = extractJson(text);
       return processedNoteSchema.parse(parsed);
     } catch (error) {
       if (error instanceof AppError) {

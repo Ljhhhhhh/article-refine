@@ -92,7 +92,7 @@ describe("OpenAINoteExtractor", () => {
           qualityHints: { informationDensity: "low", practicality: "medium" }
         }
       })
-    ).rejects.toThrow("LLM response did not contain JSON");
+    ).rejects.toThrow("LLM response did not contain valid JSON");
   });
 });
 
