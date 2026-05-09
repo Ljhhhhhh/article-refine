@@ -24,7 +24,7 @@ export class Step1Analyzer {
       fetch: proxyFetch as typeof fetch
     });
     this.model = options.model;
-    this.maxTokens = options.maxTokens ?? 1024;
+    this.maxTokens = options.maxTokens ?? 4096;
   }
 
   async analyze(input: Pick<FetchedContent, "sourceUrl" | "title" | "author" | "rawText"> & { linkType: string }): Promise<Step1Analysis> {

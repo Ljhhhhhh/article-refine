@@ -1,4 +1,5 @@
-export const STEP1_PROMPT = `<role>
+export const STEP1_PROMPT = `/no_think
+<role>
 你是一位内容分析专家。你的任务是快速理解一篇文章的核心价值，
 提取关键分析信息，为后续的结构化笔记生成提供上下文。
 </role>
@@ -56,5 +57,5 @@ export const STEP1_PROMPT = `<role>
   },
   "suggestedTags": ["#标签1", "#标签2"]
 }
-只输出 JSON，不要其他文字。
+只输出一个 JSON 对象，不要输出任何其他文字、标题、解释或 markdown 格式。
 </output>`;
