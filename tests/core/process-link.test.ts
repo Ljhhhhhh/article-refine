@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { processLink } from "../../src/core/process-link.js";
 import type { ContentFetcher } from "../../src/fetchers/fetcher.js";
 import { MockNoteExtractor } from "../../src/llm/note-extractor.js";
+import type { OssUploadResult, OssUploader } from "../../src/storage/oss-uploader.js";
+import { AppError } from "../../src/errors/errors.js";
 
 let vaultPath: string;
 
@@ -106,6 +108,94 @@ describe("processLink", () => {
       expect(second.obsidian.path).toBe(firstPath);
     } else {
       throw new Error("Expected successful update result.");
+    }
+  });
+});
+
+function makeUploader(behavior: "ok" | "fail"): OssUploader {
+  return {
+    upload: async ({ key }: { key: string }): Promise<OssUploadResult> => {
+      if (behavior === "fail") {
+        throw new AppError("OSS_UPLOAD_FAILED", "boom");
+      }
+      return {
+        bucket: "bucket",
+        key,
+        url: `oss://bucket/${key}`,
+        httpsUrl: `https://bucket.example.com/${key}`,
+        etag: "\"deadbeef\""
+      };
+    },
+    head: async () => {}
+  } as unknown as OssUploader;
+}
+
+describe("processLink OSS mirror", () => {
+  test("attaches uploaded oss result on success", async () => {
+    const result = await processLink("https://example.dev/agent", {
+      vaultPath,
+      fetchers: [fakeFetcher],
+      extractor: new MockNoteExtractor(),
+      qualityThreshold: 300,
+      now: () => new Date("2026-05-07T10:00:00.000Z"),
+      oss: {
+        uploader: makeUploader("ok"),
+        prefix: "notes",
+        strict: false
+      }
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok && "obsidian" in result) {
+      expect(result.oss).toMatchObject({
+        uploaded: true,
+        bucket: "bucket",
+        url: expect.stringContaining("oss://bucket/notes/文章摘要")
+      });
+    }
+  });
+
+  test("degrades to warning when oss upload fails and strict is false", async () => {
+    const result = await processLink("https://example.dev/agent", {
+      vaultPath,
+      fetchers: [fakeFetcher],
+      extractor: new MockNoteExtractor(),
+      qualityThreshold: 300,
+      now: () => new Date("2026-05-07T10:00:00.000Z"),
+      oss: {
+        uploader: makeUploader("fail"),
+        prefix: "",
+        strict: false
+      }
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok && "obsidian" in result) {
+      expect(result.oss).toMatchObject({
+        uploaded: false,
+        error: { code: "OSS_UPLOAD_FAILED" }
+      });
+      await expect(readFile(result.obsidian.path, "utf8")).resolves.toContain("# Agent 工程文章");
+    }
+  });
+
+  test("returns failure when oss upload fails and strict is true", async () => {
+    const result = await processLink("https://example.dev/agent", {
+      vaultPath,
+      fetchers: [fakeFetcher],
+      extractor: new MockNoteExtractor(),
+      qualityThreshold: 300,
+      now: () => new Date("2026-05-07T10:00:00.000Z"),
+      oss: {
+        uploader: makeUploader("fail"),
+        prefix: "",
+        strict: true
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.code).toBe("OSS_UPLOAD_FAILED");
     }
   });
 });

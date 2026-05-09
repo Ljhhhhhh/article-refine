@@ -5,11 +5,27 @@ import type { NoteExtractor } from "../llm/note-extractor.js";
 import type { ContentType } from "../llm/schema.js";
 import type { LinkType } from "../router/types.js";
 import { saveObsidianNote, type SavedNote } from "../storage/obsidian-storage.js";
+import { computeOssKey } from "../storage/oss-key.js";
+import type { OssUploader, OssUploadResult } from "../storage/oss-uploader.js";
 import { findSourceIndexEntry, upsertSourceIndexEntry } from "../storage/source-index.js";
 import { renderStandardTemplate } from "../templates/standard-template.js";
 import { routeLink } from "./route-link.js";
 
 export type DuplicatePolicy = "create" | "skip" | "update";
+
+export type ProcessOssResult =
+  | {
+      uploaded: true;
+      bucket: string;
+      key: string;
+      url: string;
+      httpsUrl: string;
+      etag?: string;
+    }
+  | {
+      uploaded: false;
+      error: { code: "OSS_UPLOAD_FAILED"; message: string };
+    };
 
 export type ProcessSuccessResult = {
   ok: true;
@@ -19,6 +35,7 @@ export type ProcessSuccessResult = {
   contentType: ContentType;
   title: string;
   obsidian: SavedNote;
+  oss?: ProcessOssResult;
 };
 
 export type ProcessSkippedResult = {
@@ -40,6 +57,11 @@ export type ProcessOptions = {
   now?: () => Date;
   onProgress?: (step: string) => void;
   duplicatePolicy?: DuplicatePolicy;
+  oss?: {
+    uploader: OssUploader;
+    prefix: string;
+    strict: boolean;
+  };
 };
 
 export async function processLink(sourceUrl: string, options: ProcessOptions): Promise<ProcessResult> {
@@ -95,6 +117,41 @@ export async function processLink(sourceUrl: string, options: ProcessOptions): P
       existingPath: existingEntry && duplicatePolicy === "update" ? existingEntry.path : undefined
     });
 
+    let ossOutcome: ProcessOssResult | undefined;
+    if (options.oss) {
+      options.onProgress?.("mirroring");
+      const key = computeOssKey({
+        vaultPath: options.vaultPath,
+        savedPath: obsidian.path,
+        prefix: options.oss.prefix
+      });
+      try {
+        const uploaded: OssUploadResult = await options.oss.uploader.upload({
+          key,
+          body: markdown
+        });
+        ossOutcome = {
+          uploaded: true,
+          bucket: uploaded.bucket,
+          key: uploaded.key,
+          url: uploaded.url,
+          httpsUrl: uploaded.httpsUrl,
+          etag: uploaded.etag
+        };
+      } catch (error) {
+        if (options.oss.strict) {
+          throw error;
+        }
+        const err = error instanceof AppError
+          ? error
+          : new AppError("OSS_UPLOAD_FAILED", error instanceof Error ? error.message : "OSS upload failed.");
+        ossOutcome = {
+          uploaded: false,
+          error: { code: "OSS_UPLOAD_FAILED", message: err.message }
+        };
+      }
+    }
+
     await upsertSourceIndexEntry(options.vaultPath, {
       sourceUrl,
       path: obsidian.path,
@@ -110,7 +167,8 @@ export async function processLink(sourceUrl: string, options: ProcessOptions): P
       linkType: routed.linkType,
       contentType: note.contentType,
       title: note.title,
-      obsidian
+      obsidian,
+      ...(ossOutcome ? { oss: ossOutcome } : {})
     };
   } catch (error) {
     return toFailureResult("process", error, sourceUrl);

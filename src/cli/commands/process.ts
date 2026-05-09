@@ -1,9 +1,10 @@
 import type { Command } from "commander";
-import { processLink } from "../../core/process-link.js";
+import { processLink, type ProcessOptions } from "../../core/process-link.js";
 import { WebFetcher } from "../../fetchers/web-fetcher.js";
 import { TwitterFetcher } from "../../fetchers/twitter-fetcher.js";
 import { createExtractor } from "../../llm/factory.js";
 import { resolveProcessConfig } from "../../config/resolve-config.js";
+import { OssUploader } from "../../storage/oss-uploader.js";
 import { renderHumanProcessResult } from "../presenters/human.js";
 import { renderJson } from "../presenters/json.js";
 
@@ -21,6 +22,7 @@ export function registerProcessCommand(program: Command): void {
     .option("--config <path>", "config path", "link-processing.config.yaml")
     .option("--skip-existing", "skip processing if source URL already exists in the vault index")
     .option("--update-existing", "overwrite the existing note if source URL already exists")
+    .option("--no-oss", "disable OSS mirror for this run even if configured")
     .action(
       async (
         url: string,
@@ -35,6 +37,7 @@ export function registerProcessCommand(program: Command): void {
           config?: string;
           skipExisting?: boolean;
           updateExisting?: boolean;
+          oss?: boolean;
         }
       ) => {
         const resolved = await resolveProcessConfig({
@@ -89,7 +92,8 @@ export function registerProcessCommand(program: Command): void {
                 preparing: "准备阶段：长文压缩（如需要）...",
                 drafting: "Pass 1: 起草笔记...",
                 revising: "Pass 2: 对照原文修订...",
-                saving: "保存到 Obsidian..."
+                saving: "保存到 Obsidian...",
+                mirroring: "同步到 OSS..."
               };
               process.stderr.write(`  ${labels[step] ?? step}\n`);
             };
@@ -123,13 +127,31 @@ export function registerProcessCommand(program: Command): void {
             ? "skip"
             : "create";
 
+        let oss: ProcessOptions["oss"];
+        if (config.storage.oss.enabled && options.oss !== false) {
+          oss = {
+            uploader: new OssUploader({
+              endpoint: config.storage.oss.endpoint!,
+              region: config.storage.oss.region!,
+              bucket: config.storage.oss.bucket!,
+              prefix: config.storage.oss.prefix,
+              accessKeyId: config.storage.oss.accessKeyId!,
+              secretAccessKey: config.storage.oss.secretAccessKey!,
+              forcePathStyle: config.storage.oss.forcePathStyle
+            }),
+            prefix: config.storage.oss.prefix,
+            strict: config.storage.oss.strict
+          };
+        }
+
         const result = await processLink(url, {
           vaultPath: config.obsidian.vaultPath,
           fetchers: [new TwitterFetcher(), new WebFetcher()],
           extractor,
           qualityThreshold: config.processing.qualityThreshold,
           onProgress,
-          duplicatePolicy
+          duplicatePolicy,
+          oss
         });
 
         process.stdout.write(
