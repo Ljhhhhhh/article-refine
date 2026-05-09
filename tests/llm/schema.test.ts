@@ -31,13 +31,13 @@ describe("processedNoteSchema", () => {
     expect(parsed.contentType).toBe("技术深度");
   });
 
-  test("requires 3 to 7 key points", () => {
+  test("requires 1 to 7 key points", () => {
     expect(() =>
       processedNoteSchema.parse({
         title: "标题",
         contentType: "综合",
         summary: "摘要",
-        keyPoints: [{ title: "一个", detail: "不足三个" }],
+        keyPoints: [],
         knowledgeConnections: [],
         quality: {
           informationDensity: "medium",
@@ -48,6 +48,19 @@ describe("processedNoteSchema", () => {
         tags: ["#综合", "#链接笔记"]
       })
     ).toThrow();
+  });
+
+  test("coerces string keyPoints to objects", () => {
+    const parsed = processedNoteSchema.parse({
+      title: "标题",
+      contentType: "综合",
+      summary: "摘要",
+      keyPoints: ["第一个要点的详细描述", "第二个要点的详细描述"],
+      knowledgeConnections: [],
+      tags: ["#综合"]
+    });
+    expect(parsed.keyPoints[0]).toHaveProperty("title");
+    expect(parsed.keyPoints[0]).toHaveProperty("detail");
   });
 });
 

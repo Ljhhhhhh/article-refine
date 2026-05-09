@@ -6,36 +6,48 @@ export const recommendedSaveSchema = z.enum(["strong", "normal", "reference"]);
 
 // Step 1 analysis output
 export const step1AnalysisSchema = z.object({
-  contentType: contentTypeSchema,
+  contentType: contentTypeSchema.default("综合"),
   title: z.string().min(1),
-  coreArguments: z.array(z.string()).min(1).max(5),
-  keyEntities: z.array(z.string()),
-  writingStyle: z.string(),
-  targetAudience: z.string(),
-  quality: z.object({
-    informationDensity: qualityLevelSchema,
-    originality: qualityLevelSchema,
-    practicality: qualityLevelSchema,
-  }),
-  suggestedTags: z.array(z.string().startsWith("#")).min(2).max(6),
+  coreArguments: z.array(z.string()).min(1).max(5).default([]),
+  keyEntities: z.array(z.string()).default([]),
+  writingStyle: z.string().default(""),
+  targetAudience: z.string().default(""),
+  quality: z
+    .object({
+      informationDensity: qualityLevelSchema,
+      originality: qualityLevelSchema,
+      practicality: qualityLevelSchema,
+    })
+    .default({ informationDensity: "medium", originality: "medium", practicality: "medium" }),
+  suggestedTags: z
+    .array(z.string())
+    .transform((arr) => arr.map((t) => t.startsWith("#") ? t : `#${t}`).slice(0, 6))
+    .pipe(z.array(z.string()).min(1))
+    .default(["#综合"]),
 });
 
 export type Step1Analysis = z.infer<typeof step1AnalysisSchema>;
 
+// Coerce string keyPoints to {title, detail} objects
+const keyPointSchema = z.preprocess(
+  (val) => {
+    if (typeof val === "string") {
+      return { title: val.slice(0, 30), detail: val };
+    }
+    return val;
+  },
+  z.object({
+    title: z.string().min(1),
+    detail: z.string().min(1)
+  })
+);
+
 // Final processed note
 export const processedNoteSchema = z.object({
   title: z.string().min(1),
-  contentType: contentTypeSchema,
+  contentType: contentTypeSchema.default("综合"),
   summary: z.string().min(1),
-  keyPoints: z
-    .array(
-      z.object({
-        title: z.string().min(1),
-        detail: z.string().min(1)
-      })
-    )
-    .min(3)
-    .max(7),
+  keyPoints: z.array(keyPointSchema).min(1).max(7),
   technicalAnalysis: z
     .object({
       architecture: z.string().optional(),
@@ -55,13 +67,15 @@ export const processedNoteSchema = z.object({
   prerequisites: z.array(z.string()).nullable().optional(),
   expectedOutcome: z.string().nullable().optional(),
   knowledgeConnections: z.array(z.string()).default([]),
-  quality: z.object({
-    informationDensity: qualityLevelSchema,
-    originality: qualityLevelSchema,
-    practicality: qualityLevelSchema,
-    recommendedSave: recommendedSaveSchema
-  }),
-  tags: z.array(z.string().startsWith("#")).min(2).max(6)
+  quality: z
+    .object({
+      informationDensity: qualityLevelSchema,
+      originality: qualityLevelSchema,
+      practicality: qualityLevelSchema,
+      recommendedSave: recommendedSaveSchema
+    })
+    .default({ informationDensity: "medium", originality: "medium", practicality: "medium", recommendedSave: "normal" }),
+  tags: z.array(z.string()).transform((arr) => arr.map((t) => t.startsWith("#") ? t : `#${t}`).slice(0, 6)).pipe(z.array(z.string()).min(1))
 });
 
 export type ProcessedNote = z.infer<typeof processedNoteSchema>;
