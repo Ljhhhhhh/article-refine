@@ -3,6 +3,7 @@ import "dotenv/config";
 import { Command } from "commander";
 import { registerInspectCommand } from "./commands/inspect.js";
 import { registerConfigCommand } from "./commands/config.js";
+import { registerDoctorCommand } from "./commands/doctor.js";
 import { registerProcessCommand } from "./commands/process.js";
 import { registerRouteCommand } from "./commands/route.js";
 
@@ -18,6 +19,7 @@ export function createProgram(): Command {
   registerInspectCommand(program);
   registerProcessCommand(program);
   registerConfigCommand(program);
+  registerDoctorCommand(program);
 
   return program;
 }
