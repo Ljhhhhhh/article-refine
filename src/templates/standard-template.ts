@@ -1,3 +1,4 @@
+import YAML from "yaml";
 import type { ProcessedNote } from "../llm/schema.js";
 
 type RenderStandardTemplateInput = {
@@ -16,10 +17,30 @@ function formatDateTime(date: Date): string {
   return date.toISOString().replace("T", " ").slice(0, 16);
 }
 
+function stripHash(tag: string): string {
+  return tag.replace(/^#/, "");
+}
+
+function renderFrontmatter(input: RenderStandardTemplateInput): string {
+  const { note, sourceUrl, author, createdAt, fetchedAt } = input;
+  const yaml = YAML.stringify({
+    title: note.title,
+    source_url: sourceUrl,
+    author: author ?? "未知",
+    content_type: note.contentType,
+    created: formatDate(createdAt),
+    fetched: formatDateTime(fetchedAt),
+    tags: note.tags.map(stripHash)
+  });
+
+  return ["---", yaml.trimEnd(), "---", ""].join("\n");
+}
+
 export function renderStandardTemplate(input: RenderStandardTemplateInput): string {
   const { note, sourceUrl, author, createdAt, fetchedAt } = input;
 
   const lines: string[] = [
+    renderFrontmatter(input),
     `# ${note.title}`,
     "",
     `> 创建日期：${formatDate(createdAt)}`,

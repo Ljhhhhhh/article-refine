@@ -85,4 +85,29 @@ describe("renderStandardTemplate", () => {
     expect(markdown).toContain("> 引用块");
     expect(markdown).toContain("| col | col |");
   });
+
+  test("renders YAML frontmatter for Obsidian metadata", () => {
+    const markdown = renderStandardTemplate({
+      note: {
+        title: "RSC 性能优化实践",
+        contentType: "技术深度",
+        tags: ["#React", "#RSC", "#性能优化"],
+        knowledgeConnections: ["Next.js App Router"],
+        body: "## 背景\n\n正文"
+      },
+      sourceUrl: "https://example.com/rsc",
+      author: "Example Author",
+      createdAt: new Date("2026-05-09T00:00:00.000Z"),
+      fetchedAt: new Date("2026-05-09T10:20:00.000Z")
+    });
+
+    expect(markdown.startsWith("---\n")).toBe(true);
+    expect(markdown).toContain("title: RSC 性能优化实践");
+    expect(markdown).toContain("source_url: https://example.com/rsc");
+    expect(markdown).toContain("content_type: 技术深度");
+    expect(markdown).toContain("created: 2026-05-09");
+    expect(markdown).toContain("fetched: 2026-05-09 10:20");
+    expect(markdown).toContain("- React");
+    expect(markdown).toContain("- RSC");
+  });
 });
