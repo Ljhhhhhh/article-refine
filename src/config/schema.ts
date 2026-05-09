@@ -18,7 +18,7 @@ export const configSchema = z.object({
     retryCount: z.number().int().nonnegative().default(3)
   }),
   llm: z.object({
-    provider: z.enum(["mock", "openai"]).default("mock"),
+    provider: z.enum(["mock", "two-step"]).default("two-step"),
     model: z.string().default("mock"),
     baseUrl: z.string().url().optional(),
     apiKey: z.string().optional()

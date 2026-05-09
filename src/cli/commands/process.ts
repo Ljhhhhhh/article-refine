@@ -12,10 +12,12 @@ export function registerProcessCommand(program: Command): void {
     .argument("<url>")
     .option("--json", "print machine-readable JSON")
     .option("--vault <path>", "Obsidian vault path")
-    .option("--llm-provider <provider>", "LLM provider (mock|openai)", "mock")
+    .option("--llm-provider <provider>", "LLM provider (mock|two-step)")
     .option("--llm-model <model>", "LLM model name")
     .option("--llm-base-url <url>", "OpenAI-compatible API base URL")
-    .action(async (url: string, options: { json?: boolean; vault?: string; llmProvider?: string; llmModel?: string; llmBaseUrl?: string }) => {
+    .option("--step1-model <model>", "Step 1 LLM model name")
+    .option("--step2-model <model>", "Step 2 LLM model name")
+    .action(async (url: string, options: { json?: boolean; vault?: string; llmProvider?: string; llmModel?: string; llmBaseUrl?: string; step1Model?: string; step2Model?: string }) => {
       const vaultPath = options.vault ?? process.env.LINK_PROCESSING_VAULT;
       if (!vaultPath) {
         const failure = {
@@ -33,16 +35,18 @@ export function registerProcessCommand(program: Command): void {
         return;
       }
 
-      const provider = options.llmProvider ?? process.env.LINK_PROCESSING_LLM_PROVIDER ?? "mock";
+      const provider = options.llmProvider ?? process.env.LINK_PROCESSING_LLM_PROVIDER ?? "two-step";
       const model = options.llmModel ?? process.env.LINK_PROCESSING_LLM_MODEL ?? "gpt-4o";
 
       let extractor;
       try {
         extractor = createExtractor({
-          provider: provider as "mock" | "openai",
+          provider: provider as "mock" | "two-step",
           model,
           baseUrl: options.llmBaseUrl ?? process.env.OPENAI_BASE_URL,
-          apiKey: process.env.OPENAI_API_KEY
+          apiKey: process.env.OPENAI_API_KEY,
+          step1Model: options.step1Model,
+          step2Model: options.step2Model
         });
       } catch (error) {
         const message = error instanceof Error ? error.message : "Extractor creation failed.";
