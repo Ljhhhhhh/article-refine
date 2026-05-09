@@ -78,4 +78,34 @@ describe("processLink", () => {
       throw new Error("Expected skipped duplicate result.");
     }
   });
+
+  test("updates existing note when duplicatePolicy is update", async () => {
+    const first = await processLink("https://example.dev/agent", {
+      vaultPath,
+      fetchers: [fakeFetcher],
+      extractor: new MockNoteExtractor(),
+      qualityThreshold: 300,
+      duplicatePolicy: "create",
+      now: () => new Date("2026-05-07T10:00:00.000Z")
+    });
+
+    expect(first.ok).toBe(true);
+    const firstPath = first.ok && "obsidian" in first ? first.obsidian.path : "";
+
+    const second = await processLink("https://example.dev/agent#fragment", {
+      vaultPath,
+      fetchers: [fakeFetcher],
+      extractor: new MockNoteExtractor(),
+      qualityThreshold: 300,
+      duplicatePolicy: "update",
+      now: () => new Date("2026-05-07T10:00:00.000Z")
+    });
+
+    expect(second.ok).toBe(true);
+    if (second.ok && "obsidian" in second) {
+      expect(second.obsidian.path).toBe(firstPath);
+    } else {
+      throw new Error("Expected successful update result.");
+    }
+  });
 });
