@@ -27,8 +27,8 @@ describe("inspectLink", () => {
       expect(result.linkType).toBe("tech_blog");
       expect(result.title).toBe("Agent 工程文章");
       expect(result.author).toBe("Author");
-      expect(result.contentType).toBe("技术深度");
-      expect(result.recommendedTags).toContain("#技术深度");
+      expect(result.contentType).toBe("综合");
+      expect(result.recommendedTags).toEqual([]);
       expect(result.wordCount).toBeGreaterThan(20);
     }
   });

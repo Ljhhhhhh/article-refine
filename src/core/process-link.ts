@@ -1,4 +1,3 @@
-import { analyzeContent } from "../analyzer/content-analyzer.js";
 import { AppError, toFailureResult, type FailureResult } from "../errors/errors.js";
 import { CompositeFetcher } from "../fetchers/composite-fetcher.js";
 import type { ContentFetcher } from "../fetchers/fetcher.js";
@@ -42,14 +41,12 @@ export async function processLink(sourceUrl: string, options: ProcessOptions): P
       throw new AppError("CONTENT_TOO_SHORT", "Fetched content is below the quality threshold.");
     }
 
-    const analysis = analyzeContent(fetched.rawText);
     const note = await options.extractor.extract({
       sourceUrl,
       linkType: routed.linkType,
       title: fetched.title,
       author: fetched.author,
-      rawText: fetched.rawText,
-      analysis
+      rawText: fetched.rawText
     });
     const now = options.now ?? (() => new Date());
     const markdown = renderStandardTemplate({

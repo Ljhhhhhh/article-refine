@@ -1,4 +1,3 @@
-import { analyzeContent } from "../analyzer/content-analyzer.js";
 import { AppError, toFailureResult, type FailureResult } from "../errors/errors.js";
 import { CompositeFetcher } from "../fetchers/composite-fetcher.js";
 import type { ContentFetcher } from "../fetchers/fetcher.js";
@@ -36,7 +35,7 @@ export async function inspectLink(sourceUrl: string, options: InspectOptions): P
     if (routed.linkType !== "video" && content.rawText.length < options.qualityThreshold) {
       throw new AppError("CONTENT_TOO_SHORT", "Fetched content is below the quality threshold.");
     }
-    const analysis = analyzeContent(content.rawText);
+    const wordCount = content.rawText.split(/\s+/).filter(Boolean).length;
 
     return {
       ok: true,
@@ -45,9 +44,9 @@ export async function inspectLink(sourceUrl: string, options: InspectOptions): P
       linkType: routed.linkType,
       title: content.title,
       author: content.author,
-      wordCount: analysis.wordCount,
-      contentType: analysis.contentType,
-      recommendedTags: analysis.recommendedTags
+      wordCount,
+      contentType: "综合",
+      recommendedTags: []
     };
   } catch (error) {
     return toFailureResult("inspect", error, sourceUrl);
