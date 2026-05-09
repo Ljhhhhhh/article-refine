@@ -39,13 +39,43 @@ describe("processLink", () => {
     });
 
     expect(result.ok).toBe(true);
-    if (result.ok) {
+    if (result.ok && "obsidian" in result) {
       expect(result.command).toBe("process");
       expect(result.linkType).toBe("tech_blog");
       expect(result.contentType).toBe("综合");
       expect(result.obsidian.saved).toBe(true);
       expect(result.obsidian.path).toContain(path.join("文章摘要", "综合"));
       await expect(readFile(result.obsidian.path, "utf8")).resolves.toContain("# Agent 工程文章");
+    }
+  });
+
+  test("skips existing source when duplicatePolicy is skip", async () => {
+    const first = await processLink("https://example.dev/agent", {
+      vaultPath,
+      fetchers: [fakeFetcher],
+      extractor: new MockNoteExtractor(),
+      qualityThreshold: 300,
+      duplicatePolicy: "create",
+      now: () => new Date("2026-05-07T10:00:00.000Z")
+    });
+
+    expect(first.ok).toBe(true);
+
+    const second = await processLink("https://example.dev/agent#section", {
+      vaultPath,
+      fetchers: [fakeFetcher],
+      extractor: new MockNoteExtractor(),
+      qualityThreshold: 300,
+      duplicatePolicy: "skip",
+      now: () => new Date("2026-05-07T10:00:00.000Z")
+    });
+
+    expect(second.ok).toBe(true);
+    if (second.ok && "skipped" in second) {
+      expect(second.skipped).toBe(true);
+      expect(second.existingPath).toContain("2026-05-07-Agent 工程文章.md");
+    } else {
+      throw new Error("Expected skipped duplicate result.");
     }
   });
 });

@@ -22,4 +22,19 @@ describe("renderHumanProcessResult", () => {
     expect(output).toContain("Title: Agent 工程文章");
     expect(output).toContain("Saved: /vault/文章摘要/技术深度/2026-05-07-Agent 工程文章.md");
   });
+
+  test("renders skipped result for duplicate sources", () => {
+    const output = renderHumanProcessResult({
+      ok: true,
+      command: "process",
+      sourceUrl: "https://example.dev/agent#section",
+      skipped: true,
+      reason: "SOURCE_ALREADY_EXISTS",
+      existingPath: "/vault/文章摘要/综合/2026-05-07-Agent 工程文章.md"
+    });
+
+    expect(output).toContain("Link already processed");
+    expect(output).toContain("Existing: /vault/文章摘要/综合/2026-05-07-Agent 工程文章.md");
+    expect(output).toContain("Action: skipped");
+  });
 });

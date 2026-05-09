@@ -5,8 +5,11 @@ import type { NoteExtractor } from "../llm/note-extractor.js";
 import type { ContentType } from "../llm/schema.js";
 import type { LinkType } from "../router/types.js";
 import { saveObsidianNote, type SavedNote } from "../storage/obsidian-storage.js";
+import { findSourceIndexEntry, upsertSourceIndexEntry } from "../storage/source-index.js";
 import { renderStandardTemplate } from "../templates/standard-template.js";
 import { routeLink } from "./route-link.js";
+
+export type DuplicatePolicy = "create" | "skip" | "update";
 
 export type ProcessSuccessResult = {
   ok: true;
@@ -18,7 +21,16 @@ export type ProcessSuccessResult = {
   obsidian: SavedNote;
 };
 
-export type ProcessResult = ProcessSuccessResult | FailureResult;
+export type ProcessSkippedResult = {
+  ok: true;
+  command: "process";
+  sourceUrl: string;
+  skipped: true;
+  reason: "SOURCE_ALREADY_EXISTS";
+  existingPath: string;
+};
+
+export type ProcessResult = ProcessSuccessResult | ProcessSkippedResult | FailureResult;
 
 export type ProcessOptions = {
   vaultPath: string;
@@ -27,6 +39,7 @@ export type ProcessOptions = {
   qualityThreshold: number;
   now?: () => Date;
   onProgress?: (step: string) => void;
+  duplicatePolicy?: DuplicatePolicy;
 };
 
 export async function processLink(sourceUrl: string, options: ProcessOptions): Promise<ProcessResult> {
@@ -36,6 +49,19 @@ export async function processLink(sourceUrl: string, options: ProcessOptions): P
   }
 
   try {
+    const duplicatePolicy = options.duplicatePolicy ?? "create";
+    const existingEntry = await findSourceIndexEntry(options.vaultPath, sourceUrl);
+    if (existingEntry && duplicatePolicy === "skip") {
+      return {
+        ok: true,
+        command: "process",
+        sourceUrl,
+        skipped: true,
+        reason: "SOURCE_ALREADY_EXISTS",
+        existingPath: existingEntry.path
+      };
+    }
+
     options.onProgress?.("fetching");
     const fetched = await new CompositeFetcher(options.fetchers).fetch(routed);
     if (routed.linkType !== "video" && fetched.rawText.length < options.qualityThreshold) {
@@ -65,7 +91,16 @@ export async function processLink(sourceUrl: string, options: ProcessOptions): P
       contentType: note.contentType,
       markdown,
       tags: note.tags,
-      now
+      now,
+      existingPath: existingEntry && duplicatePolicy === "update" ? existingEntry.path : undefined
+    });
+
+    await upsertSourceIndexEntry(options.vaultPath, {
+      sourceUrl,
+      path: obsidian.path,
+      title: note.title,
+      contentType: note.contentType,
+      updatedAt: now().toISOString()
     });
 
     return {

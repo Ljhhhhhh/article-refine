@@ -10,6 +10,7 @@ export type SaveObsidianNoteInput = {
   markdown: string;
   tags: string[];
   now?: () => Date;
+  existingPath?: string;
 };
 
 export type SavedNote = {
@@ -32,6 +33,18 @@ async function exists(filePath: string): Promise<boolean> {
 
 export async function saveObsidianNote(input: SaveObsidianNoteInput): Promise<SavedNote> {
   try {
+    if (input.existingPath) {
+      const tempPath = `${input.existingPath}.tmp-${Date.now()}`;
+      await writeFile(tempPath, input.markdown, "utf8");
+      await rename(tempPath, input.existingPath);
+      return {
+        saved: true,
+        path: input.existingPath,
+        filename: path.basename(input.existingPath),
+        tags: input.tags
+      };
+    }
+
     for (const directory of ROOT_DIRECTORIES) {
       await mkdir(path.join(input.vaultPath, directory), { recursive: true });
     }

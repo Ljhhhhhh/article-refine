@@ -19,6 +19,8 @@ export function registerProcessCommand(program: Command): void {
     .option("--draft-model <model>", "Draft (Pass 1) LLM model name")
     .option("--revise-model <model>", "Revise (Pass 2, thinking) LLM model name")
     .option("--config <path>", "config path", "link-processing.config.yaml")
+    .option("--skip-existing", "skip processing if source URL already exists in the vault index")
+    .option("--update-existing", "overwrite the existing note if source URL already exists")
     .action(
       async (
         url: string,
@@ -31,6 +33,8 @@ export function registerProcessCommand(program: Command): void {
           draftModel?: string;
           reviseModel?: string;
           config?: string;
+          skipExisting?: boolean;
+          updateExisting?: boolean;
         }
       ) => {
         const resolved = await resolveProcessConfig({
@@ -93,12 +97,19 @@ export function registerProcessCommand(program: Command): void {
           return;
         }
 
+        const duplicatePolicy = options.updateExisting
+          ? "update"
+          : options.skipExisting
+            ? "skip"
+            : "create";
+
         const result = await processLink(url, {
           vaultPath: config.obsidian.vaultPath,
           fetchers: [new TwitterFetcher(), new WebFetcher()],
           extractor,
           qualityThreshold: config.processing.qualityThreshold,
-          onProgress
+          onProgress,
+          duplicatePolicy
         });
 
         process.stdout.write(
