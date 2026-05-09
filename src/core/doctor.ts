@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { resolveProcessConfig } from "../config/resolve-config.js";
 import { listLinkCapabilities } from "../router/capabilities.js";
@@ -42,10 +42,12 @@ export async function runDoctor(input: { configPath?: string }): Promise<DoctorR
       : `No config file loaded; using env and CLI defaults.`
   });
 
+  const probePath = path.join(resolved.config.obsidian.vaultPath, ".link-processing", ".doctor-write-test");
   try {
-    const probeDir = path.join(resolved.config.obsidian.vaultPath, ".link-processing");
+    const probeDir = path.dirname(probePath);
     await mkdir(probeDir, { recursive: true });
-    await writeFile(path.join(probeDir, ".doctor-write-test"), "ok", "utf8");
+    await writeFile(probePath, "ok", "utf8");
+    await rm(probePath, { force: true });
     checks.push({
       id: "vault",
       label: "Obsidian vault",
