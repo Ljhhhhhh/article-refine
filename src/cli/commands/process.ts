@@ -3,6 +3,7 @@ import { processLink } from "../../core/process-link.js";
 import { WebFetcher } from "../../fetchers/web-fetcher.js";
 import { TwitterFetcher } from "../../fetchers/twitter-fetcher.js";
 import { createExtractor } from "../../llm/factory.js";
+import { resolveProcessConfig } from "../../config/resolve-config.js";
 import { renderHumanProcessResult } from "../presenters/human.js";
 import { renderJson } from "../presenters/json.js";
 
@@ -17,6 +18,7 @@ export function registerProcessCommand(program: Command): void {
     .option("--llm-base-url <url>", "OpenAI-compatible API base URL")
     .option("--draft-model <model>", "Draft (Pass 1) LLM model name")
     .option("--revise-model <model>", "Revise (Pass 2, thinking) LLM model name")
+    .option("--config <path>", "config path", "link-processing.config.yaml")
     .action(
       async (
         url: string,
@@ -28,34 +30,32 @@ export function registerProcessCommand(program: Command): void {
           llmBaseUrl?: string;
           draftModel?: string;
           reviseModel?: string;
+          config?: string;
         }
       ) => {
-        const vaultPath = options.vault ?? process.env.LINK_PROCESSING_VAULT;
-        if (!vaultPath) {
-          const failure = {
-            ok: false,
-            command: "process",
-            sourceUrl: url,
-            error: {
-              code: "OBSIDIAN_CONFIG_MISSING",
-              message: "Provide --vault or LINK_PROCESSING_VAULT.",
-              retryable: false
-            }
-          };
+        const resolved = await resolveProcessConfig({
+          configPath: options.config,
+          cli: {
+            vaultPath: options.vault,
+            llmProvider: options.llmProvider,
+            llmModel: options.llmModel,
+            llmBaseUrl: options.llmBaseUrl,
+            draftModel: options.draftModel,
+            reviseModel: options.reviseModel
+          }
+        });
+
+        if (!resolved.ok) {
           process.stdout.write(
             options.json
-              ? renderJson(failure)
-              : "Missing Obsidian vault. Provide --vault or LINK_PROCESSING_VAULT.\n"
+              ? renderJson(resolved)
+              : `Missing configuration\n\nError: ${resolved.error.code}\nMessage: ${resolved.error.message}\n`
           );
           process.exitCode = 5;
           return;
         }
 
-        const provider =
-          options.llmProvider ??
-          process.env.LINK_PROCESSING_LLM_PROVIDER ??
-          "draft-revise";
-        const model = options.llmModel ?? process.env.LINK_PROCESSING_LLM_MODEL ?? "gpt-4o";
+        const config = resolved.config;
 
         const onProgress = options.json
           ? undefined
@@ -73,13 +73,7 @@ export function registerProcessCommand(program: Command): void {
         let extractor;
         try {
           extractor = createExtractor({
-            provider: provider as "mock" | "draft-revise" | "two-step",
-            model,
-            baseUrl: options.llmBaseUrl ?? process.env.OPENAI_BASE_URL,
-            apiKey: process.env.OPENAI_API_KEY,
-            draftModel: options.draftModel,
-            reviseModel: options.reviseModel,
-            longContentThreshold: 32000,
+            ...config.llm,
             onProgress
           });
         } catch (error) {
@@ -100,10 +94,10 @@ export function registerProcessCommand(program: Command): void {
         }
 
         const result = await processLink(url, {
-          vaultPath,
+          vaultPath: config.obsidian.vaultPath,
           fetchers: [new TwitterFetcher(), new WebFetcher()],
           extractor,
-          qualityThreshold: 300,
+          qualityThreshold: config.processing.qualityThreshold,
           onProgress
         });
 

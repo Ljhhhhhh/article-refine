@@ -31,4 +31,41 @@ describe("process command", () => {
     expect(parsed.ok).toBe(false);
     expect(parsed.error.code).toBe("OBSIDIAN_CONFIG_MISSING");
   });
+
+  test("uses --config file for vault path", async () => {
+    const { mkdtemp, rm } = await import("node:fs/promises");
+    const os = await import("node:os");
+    const path = await import("node:path");
+    const { writeDefaultConfig } = await import("../../src/config/load-config.js");
+
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), "link-processing-process-cli-"));
+    const configPath = path.join(tempDir, "link-processing.config.yaml");
+    await writeDefaultConfig(configPath, tempDir);
+
+    const writeSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    const program = createProgram();
+    program.exitOverride();
+
+    await program.parseAsync(
+      [
+        "node",
+        "link-processing",
+        "process",
+        "https://example.dev/agent",
+        "--json",
+        "--config",
+        configPath,
+        "--llm-provider",
+        "mock"
+      ],
+      { from: "node" }
+    );
+
+    const output = writeSpy.mock.calls.map((call) => String(call[0])).join("");
+    writeSpy.mockRestore();
+    await rm(tempDir, { recursive: true, force: true });
+
+    const parsed = JSON.parse(output);
+    expect(parsed.error?.code).not.toBe("OBSIDIAN_CONFIG_MISSING");
+  });
 });

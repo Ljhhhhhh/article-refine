@@ -3,6 +3,8 @@ import path from "node:path";
 import YAML from "yaml";
 import { configSchema, type LinkProcessingConfig } from "./schema.js";
 
+export const DEFAULT_CONFIG_PATH = "link-processing.config.yaml";
+
 export function defaultConfig(vaultPath: string): LinkProcessingConfig {
   return {
     obsidian: {
