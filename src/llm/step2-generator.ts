@@ -38,7 +38,7 @@ export class Step2Generator {
       JSON.stringify(analysis, null, 2),
       "",
       `以下是原文内容：`,
-      input.rawText.slice(0, 12000)
+      input.rawText
     ].join("\n");
 
     const response = await this.client.chat.completions.create({
