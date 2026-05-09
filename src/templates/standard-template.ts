@@ -65,6 +65,28 @@ export function renderStandardTemplate(input: RenderStandardTemplateInput): stri
     );
   }
 
+  if (note.argumentStructure) {
+    lines.push(
+      "",
+      "## 论点结构",
+      "",
+      `**核心主张**：${note.argumentStructure.mainClaim}`
+    );
+    note.argumentStructure.supportingArguments.forEach((arg) => {
+      lines.push(`- ${arg}`);
+    });
+  }
+
+  if (note.prerequisites?.length) {
+    lines.push("", "## 前置条件", "");
+    note.prerequisites.forEach((p) => lines.push(`- ${p}`));
+  }
+
+  if (note.expectedOutcome) {
+    lines.push("", "## 预期产出", "");
+    lines.push(note.expectedOutcome);
+  }
+
   lines.push("", "## 知识连接", "");
   if (note.knowledgeConnections.length > 0) {
     note.knowledgeConnections.forEach((connection) => {

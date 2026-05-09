@@ -69,4 +69,61 @@ describe("renderStandardTemplate", () => {
 
     expect(markdown).not.toContain("## 技术深度解析（技术类内容）");
   });
+
+  test("renders argumentStructure for opinion content", () => {
+    const markdown = renderStandardTemplate({
+      note: {
+        title: "AI 是否会取代程序员",
+        contentType: "观点思考",
+        summary: "作者认为 AI 不会完全取代程序员。",
+        keyPoints: [
+          { title: "观点一", detail: "说明一。" },
+          { title: "观点二", detail: "说明二。" },
+          { title: "观点三", detail: "说明三。" }
+        ],
+        argumentStructure: {
+          mainClaim: "AI 不会取代程序员",
+          supportingArguments: ["创造性问题解决不可自动化", "需求理解需要人类判断"]
+        },
+        knowledgeConnections: ["AI 编程"],
+        quality: { informationDensity: "medium", originality: "high", practicality: "medium", recommendedSave: "normal" },
+        tags: ["#观点思考", "#AI"]
+      },
+      sourceUrl: "https://example.com/opinion",
+      createdAt: new Date("2026-05-09T00:00:00.000Z"),
+      fetchedAt: new Date("2026-05-09T10:00:00.000Z")
+    });
+
+    expect(markdown).toContain("## 论点结构");
+    expect(markdown).toContain("**核心主张**：AI 不会取代程序员");
+    expect(markdown).toContain("- 创造性问题解决不可自动化");
+  });
+
+  test("renders prerequisites and expectedOutcome for tutorial content", () => {
+    const markdown = renderStandardTemplate({
+      note: {
+        title: "从零搭建 Next.js 项目",
+        contentType: "教程学习",
+        summary: "教程介绍如何从零开始搭建 Next.js 项目。",
+        keyPoints: [
+          { title: "步骤一", detail: "说明一。" },
+          { title: "步骤二", detail: "说明二。" },
+          { title: "步骤三", detail: "说明三。" }
+        ],
+        prerequisites: ["Node.js 18+", "基础 React 知识"],
+        expectedOutcome: "一个可运行的 Next.js 项目",
+        knowledgeConnections: ["Next.js"],
+        quality: { informationDensity: "high", originality: "low", practicality: "high", recommendedSave: "normal" },
+        tags: ["#Next.js", "#教程"]
+      },
+      sourceUrl: "https://example.com/tutorial",
+      createdAt: new Date("2026-05-09T00:00:00.000Z"),
+      fetchedAt: new Date("2026-05-09T10:00:00.000Z")
+    });
+
+    expect(markdown).toContain("## 前置条件");
+    expect(markdown).toContain("- Node.js 18+");
+    expect(markdown).toContain("## 预期产出");
+    expect(markdown).toContain("一个可运行的 Next.js 项目");
+  });
 });
