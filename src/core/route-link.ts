@@ -1,10 +1,12 @@
 import { AppError, toFailureResult, type FailureResult } from "../errors/errors.js";
+import { getLinkCapability, type LinkCapability } from "../router/capabilities.js";
 import { LinkRouter } from "../router/link-router.js";
 import type { RoutedLink } from "../router/types.js";
 
 export type RouteSuccessResult = RoutedLink & {
   ok: true;
   command: "route";
+  capability: LinkCapability;
 };
 
 export type RouteResult = RouteSuccessResult | FailureResult;
@@ -20,7 +22,8 @@ export function routeLink(sourceUrl: string): RouteResult {
     return {
       ok: true,
       command: "route",
-      ...routed
+      ...routed,
+      capability: getLinkCapability(routed.linkType)
     };
   } catch (error) {
     if (error instanceof AppError) {

@@ -24,6 +24,11 @@ describe("route command", () => {
         primary: "twitter_api",
         fallback: "web_fetch",
         requiresFormatting: true
+      },
+      capability: {
+        status: "stable",
+        canProcess: true,
+        canInspect: true
       }
     });
   });
