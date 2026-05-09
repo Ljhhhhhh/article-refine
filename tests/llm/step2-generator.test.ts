@@ -17,7 +17,6 @@ const validNote = {
     deployment: "Next.js App Router"
   },
   knowledgeConnections: ["React", "SSR"],
-  quality: { informationDensity: "high", originality: "medium", practicality: "high", recommendedSave: "strong" },
   tags: ["#React", "#RSC", "#性能优化"]
 };
 
@@ -28,7 +27,6 @@ const step1Analysis = {
   keyEntities: ["React", "Server Components"],
   writingStyle: "技术教程",
   targetAudience: "前端开发者",
-  quality: { informationDensity: "high" as const, originality: "medium" as const, practicality: "high" as const },
   suggestedTags: ["#React", "#RSC"]
 };
 

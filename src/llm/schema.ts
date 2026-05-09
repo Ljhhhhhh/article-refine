@@ -1,8 +1,6 @@
 import { z } from "zod";
 
 export const contentTypeSchema = z.enum(["技术深度", "观点思考", "教程学习", "资讯动态", "综合"]);
-export const qualityLevelSchema = z.enum(["high", "medium", "low"]);
-export const recommendedSaveSchema = z.enum(["strong", "normal", "reference"]);
 
 // Step 1 analysis output
 export const step1AnalysisSchema = z.object({
@@ -12,13 +10,6 @@ export const step1AnalysisSchema = z.object({
   keyEntities: z.array(z.string()).default([]),
   writingStyle: z.string().default(""),
   targetAudience: z.string().default(""),
-  quality: z
-    .object({
-      informationDensity: qualityLevelSchema,
-      originality: qualityLevelSchema,
-      practicality: qualityLevelSchema,
-    })
-    .default({ informationDensity: "medium", originality: "medium", practicality: "medium" }),
   suggestedTags: z
     .array(z.string())
     .transform((arr) => arr.map((t) => t.startsWith("#") ? t : `#${t}`).slice(0, 6))
@@ -67,14 +58,6 @@ export const processedNoteSchema = z.object({
   prerequisites: z.array(z.string()).nullable().optional(),
   expectedOutcome: z.string().nullable().optional(),
   knowledgeConnections: z.array(z.string()).default([]),
-  quality: z
-    .object({
-      informationDensity: qualityLevelSchema,
-      originality: qualityLevelSchema,
-      practicality: qualityLevelSchema,
-      recommendedSave: recommendedSaveSchema
-    })
-    .default({ informationDensity: "medium", originality: "medium", practicality: "medium", recommendedSave: "normal" }),
   tags: z.array(z.string()).transform((arr) => arr.map((t) => t.startsWith("#") ? t : `#${t}`).slice(0, 6)).pipe(z.array(z.string()).min(1))
 });
 

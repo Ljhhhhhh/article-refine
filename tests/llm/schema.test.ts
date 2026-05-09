@@ -19,12 +19,6 @@ describe("processedNoteSchema", () => {
         deployment: "本地 CLI 使用。"
       },
       knowledgeConnections: ["Agent 工程化", "Obsidian 知识管理"],
-      quality: {
-        informationDensity: "high",
-        originality: "medium",
-        practicality: "high",
-        recommendedSave: "strong"
-      },
       tags: ["#技术深度", "#AI编程", "#链接笔记"]
     });
 
@@ -39,12 +33,6 @@ describe("processedNoteSchema", () => {
         summary: "摘要",
         keyPoints: [],
         knowledgeConnections: [],
-        quality: {
-          informationDensity: "medium",
-          originality: "medium",
-          practicality: "medium",
-          recommendedSave: "normal"
-        },
         tags: ["#综合", "#链接笔记"]
       })
     ).toThrow();
@@ -73,11 +61,6 @@ describe("step1AnalysisSchema", () => {
       keyEntities: ["React", "Server Components", "Next.js"],
       writingStyle: "技术教程",
       targetAudience: "前端开发者",
-      quality: {
-        informationDensity: "high",
-        originality: "medium",
-        practicality: "high"
-      },
       suggestedTags: ["#React", "#RSC", "#性能优化"]
     });
     expect(parsed.contentType).toBe("技术深度");
@@ -93,7 +76,6 @@ describe("step1AnalysisSchema", () => {
         keyEntities: [],
         writingStyle: "风格",
         targetAudience: "受众",
-        quality: { informationDensity: "low", originality: "low", practicality: "low" },
         suggestedTags: ["#综合", "#链接笔记"]
       })
     ).toThrow();
@@ -116,7 +98,6 @@ describe("processedNoteSchema with new optional fields", () => {
         supportingArguments: ["创造性问题解决不可自动化", "需求理解需要人类判断"]
       },
       knowledgeConnections: ["AI 编程"],
-      quality: { informationDensity: "medium", originality: "high", practicality: "medium", recommendedSave: "normal" },
       tags: ["#观点思考", "#AI"]
     });
     expect(parsed.argumentStructure?.mainClaim).toBe("AI 不会取代程序员");
@@ -135,7 +116,6 @@ describe("processedNoteSchema with new optional fields", () => {
       prerequisites: ["Node.js 18+", "基础 React 知识"],
       expectedOutcome: "一个可运行的 Next.js 项目",
       knowledgeConnections: ["Next.js"],
-      quality: { informationDensity: "high", originality: "low", practicality: "high", recommendedSave: "normal" },
       tags: ["#Next.js", "#教程"]
     });
     expect(parsed.prerequisites).toContain("Node.js 18+");

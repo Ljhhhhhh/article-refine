@@ -8,18 +8,6 @@ type RenderStandardTemplateInput = {
   fetchedAt: Date;
 };
 
-const qualityLabel = {
-  high: "高",
-  medium: "中",
-  low: "低"
-} as const;
-
-const recommendedSaveLabel = {
-  strong: "强烈推荐",
-  normal: "一般推荐",
-  reference: "仅作参考"
-} as const;
-
 function formatDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
@@ -101,15 +89,6 @@ export function renderStandardTemplate(input: RenderStandardTemplateInput): stri
     "## 外部资源",
     "",
     `- **原文链接**：${sourceUrl}`,
-    "",
-    "---",
-    "",
-    "## 质量评估",
-    "",
-    `> **信息密度**：${qualityLabel[note.quality.informationDensity]}`,
-    `> **原创性**：${qualityLabel[note.quality.originality]}`,
-    `> **实用性**：${qualityLabel[note.quality.practicality]}`,
-    `> **推荐保存**：${recommendedSaveLabel[note.quality.recommendedSave]}`,
     ""
   );
 

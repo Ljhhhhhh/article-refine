@@ -8,7 +8,6 @@ const validAnalysis = {
   keyEntities: ["React", "Server Components"],
   writingStyle: "技术教程",
   targetAudience: "前端开发者",
-  quality: { informationDensity: "high", originality: "medium", practicality: "high" },
   suggestedTags: ["#React", "#RSC", "#性能优化"]
 };
 

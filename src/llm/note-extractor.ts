@@ -25,12 +25,6 @@ export class MockNoteExtractor implements NoteExtractor {
         { title: "后续连接", detail: "该内容可以与现有知识主题建立关联。" }
       ],
       knowledgeConnections: ["链接笔记", input.linkType],
-      quality: {
-        informationDensity: "medium",
-        originality: "medium",
-        practicality: "medium",
-        recommendedSave: "normal"
-      },
       tags: ["#链接笔记", "#综合"]
     });
   }

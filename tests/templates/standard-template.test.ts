@@ -20,12 +20,6 @@ describe("renderStandardTemplate", () => {
           deployment: "本地 CLI 直接运行。"
         },
         knowledgeConnections: ["Agent 工程化", "Obsidian 知识库"],
-        quality: {
-          informationDensity: "high",
-          originality: "medium",
-          practicality: "high",
-          recommendedSave: "strong"
-        },
         tags: ["#技术深度", "#AI编程", "#链接笔记"]
       },
       sourceUrl: "https://example.com/article",
@@ -39,7 +33,6 @@ describe("renderStandardTemplate", () => {
     expect(markdown).toContain("> 作者：Example Author");
     expect(markdown).toContain("## 核心信息");
     expect(markdown).toContain("## 技术深度解析（技术类内容）");
-    expect(markdown).toContain("> **推荐保存**：强烈推荐");
   });
 
   test("omits technical analysis for non-technical notes", () => {
@@ -54,12 +47,6 @@ describe("renderStandardTemplate", () => {
           { title: "观点三", detail: "说明三。" }
         ],
         knowledgeConnections: [],
-        quality: {
-          informationDensity: "medium",
-          originality: "medium",
-          practicality: "medium",
-          recommendedSave: "normal"
-        },
         tags: ["#观点思考", "#链接笔记"]
       },
       sourceUrl: "https://example.com/opinion",
@@ -86,7 +73,6 @@ describe("renderStandardTemplate", () => {
           supportingArguments: ["创造性问题解决不可自动化", "需求理解需要人类判断"]
         },
         knowledgeConnections: ["AI 编程"],
-        quality: { informationDensity: "medium", originality: "high", practicality: "medium", recommendedSave: "normal" },
         tags: ["#观点思考", "#AI"]
       },
       sourceUrl: "https://example.com/opinion",
@@ -113,7 +99,6 @@ describe("renderStandardTemplate", () => {
         prerequisites: ["Node.js 18+", "基础 React 知识"],
         expectedOutcome: "一个可运行的 Next.js 项目",
         knowledgeConnections: ["Next.js"],
-        quality: { informationDensity: "high", originality: "low", practicality: "high", recommendedSave: "normal" },
         tags: ["#Next.js", "#教程"]
       },
       sourceUrl: "https://example.com/tutorial",

@@ -2,7 +2,7 @@ import { AppError, toFailureResult, type FailureResult } from "../errors/errors.
 import { CompositeFetcher } from "../fetchers/composite-fetcher.js";
 import type { ContentFetcher } from "../fetchers/fetcher.js";
 import type { NoteExtractor } from "../llm/note-extractor.js";
-import type { ContentType, ProcessedNote } from "../llm/schema.js";
+import type { ContentType } from "../llm/schema.js";
 import type { LinkType } from "../router/types.js";
 import { saveObsidianNote, type SavedNote } from "../storage/obsidian-storage.js";
 import { renderStandardTemplate } from "../templates/standard-template.js";
@@ -15,7 +15,6 @@ export type ProcessSuccessResult = {
   linkType: LinkType;
   contentType: ContentType;
   title: string;
-  quality: ProcessedNote["quality"];
   obsidian: SavedNote;
 };
 
@@ -76,7 +75,6 @@ export async function processLink(sourceUrl: string, options: ProcessOptions): P
       linkType: routed.linkType,
       contentType: note.contentType,
       title: note.title,
-      quality: note.quality,
       obsidian
     };
   } catch (error) {

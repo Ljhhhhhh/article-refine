@@ -8,7 +8,6 @@ const step1Response = {
   keyEntities: ["React"],
   writingStyle: "技术教程",
   targetAudience: "前端开发者",
-  quality: { informationDensity: "high", originality: "medium", practicality: "high" },
   suggestedTags: ["#React", "#RSC"]
 };
 
@@ -23,7 +22,6 @@ const step2Response = {
   ],
   technicalAnalysis: { architecture: "SSR", mechanism: "序列化", performance: "0.8s", deployment: "Next.js" },
   knowledgeConnections: ["React"],
-  quality: { informationDensity: "high", originality: "medium", practicality: "high", recommendedSave: "strong" },
   tags: ["#React", "#RSC", "#性能"]
 };
 
