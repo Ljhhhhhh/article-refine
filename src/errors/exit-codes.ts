@@ -17,6 +17,8 @@ export function getExitCodeForErrorCode(code: AppErrorCode): number {
     case "OSS_CONFIG_INVALID":
     case "OSS_UPLOAD_FAILED":
       return 6;
+    case "HTTP_SERVER_FAILED":
+      return 7;
     case "UNKNOWN_ERROR":
       return 1;
   }

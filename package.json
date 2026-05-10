@@ -3,11 +3,26 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./cli": {
+      "import": "./dist/cli/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "bin": {
     "link-processing": "./dist/cli/index.js"
   },
   "scripts": {
-    "build": "tsup src/cli/index.ts --format esm --dts --clean --out-dir dist/cli",
+    "build": "tsup src/index.ts src/cli/index.ts --format esm --dts --clean --out-dir dist",
     "dev": "tsx src/cli/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <h1>LinkProcessingAgent</h1>
+      <button id="settings" title="Settings" aria-label="Settings">⚙</button>
+    </header>
+
+    <section class="target">
+      <div class="label">Current tab</div>
+      <div id="title" class="title">—</div>
+      <div id="url" class="url">—</div>
+    </section>
+
+    <section class="controls">
+      <label>
+        <span>Duplicate policy</span>
+        <select id="duplicatePolicy">
+          <option value="create">Create new</option>
+          <option value="skip">Skip if exists</option>
+          <option value="update">Update existing</option>
+        </select>
+      </label>
+      <label class="inline">
+        <input type="checkbox" id="ossEnabled" />
+        <span>Mirror to OSS (if configured)</span>
+      </label>
+    </section>
+
+    <button id="save" class="primary" type="button">Save to Obsidian</button>
+
+    <section id="status" class="status" hidden>
+      <div id="statusStep" class="step">—</div>
+      <div id="statusDetail" class="detail"></div>
+    </section>
+
+    <section id="result" class="result" hidden></section>
+
+    <footer>
+      <span id="health" class="health">server: checking...</span>
+    </footer>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

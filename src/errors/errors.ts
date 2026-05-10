@@ -9,6 +9,7 @@ export type AppErrorCode =
   | "OBSIDIAN_WRITE_FAILED"
   | "OSS_UPLOAD_FAILED"
   | "OSS_CONFIG_INVALID"
+  | "HTTP_SERVER_FAILED"
   | "UNKNOWN_ERROR";
 
 export class AppError extends Error {

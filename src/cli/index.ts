@@ -6,6 +6,7 @@ import { registerConfigCommand } from "./commands/config.js";
 import { registerDoctorCommand } from "./commands/doctor.js";
 import { registerProcessCommand } from "./commands/process.js";
 import { registerRouteCommand } from "./commands/route.js";
+import { registerServeCommand } from "./commands/serve.js";
 
 export function createProgram(): Command {
   const program = new Command();
@@ -20,6 +21,7 @@ export function createProgram(): Command {
   registerProcessCommand(program);
   registerConfigCommand(program);
   registerDoctorCommand(program);
+  registerServeCommand(program);
 
   return program;
 }
