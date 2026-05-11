@@ -1,10 +1,4 @@
-import {
-  getSettings,
-  setSettings,
-  checkHealth,
-  processStreaming,
-  isSupportedUrl
-} from "./api.js";
+import { getSettings, setSettings, checkHealth, isSupportedUrl } from "./api.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -13,20 +7,16 @@ async function main() {
   const settings = await getSettings();
 
   $("title").textContent = tab?.title ?? "—";
-  $("url").textContent = tab?.url ?? "—";
-  $("duplicatePolicy").value = settings.duplicatePolicy;
+  $("url").textContent = truncateUrl(tab?.url);
   $("ossEnabled").checked = settings.ossEnabled !== false;
 
   if (!tab?.url || !isSupportedUrl(tab.url)) {
     $("save").disabled = true;
-    $("save").textContent = "Unsupported URL";
+    $("save").querySelector(".btn-text").textContent = "不支持的链接";
   }
 
   $("settings").addEventListener("click", () => chrome.runtime.openOptionsPage());
 
-  $("duplicatePolicy").addEventListener("change", (e) =>
-    setSettings({ duplicatePolicy: e.target.value })
-  );
   $("ossEnabled").addEventListener("change", (e) =>
     setSettings({ ossEnabled: e.target.checked })
   );
@@ -35,98 +25,30 @@ async function main() {
 
   checkHealth(settings)
     .then((h) => {
-      $("health").textContent = `server: ${h.ok ? "ok" : "down"} (${settings.serverUrl})`;
-      $("health").classList.toggle("bad", !h.ok);
+      $("health").dataset.ok = h.ok ? "1" : "0";
+      $("health").textContent = h.ok ? "已连接" : "服务不可用";
     })
-    .catch((err) => {
-      $("health").textContent = `server: unreachable (${err.message})`;
-      $("health").classList.add("bad");
+    .catch(() => {
+      $("health").dataset.ok = "0";
+      $("health").textContent = "无法连接";
     });
 }
 
-async function onSave(url) {
-  if (!url || !isSupportedUrl(url)) return;
-  const saveBtn = $("save");
-  saveBtn.disabled = true;
-  saveBtn.textContent = "Saving...";
-  showStatus("starting", "");
-  $("result").hidden = true;
-
-  const overrides = {
-    duplicatePolicy: $("duplicatePolicy").value,
-    oss: $("ossEnabled").checked
-  };
-
+function truncateUrl(url) {
+  if (!url) return "—";
   try {
-    const result = await processStreaming(url, overrides, undefined, (evt) => {
-      if (evt.type === "progress") showStatus(evt.data.step, "");
-      else if (evt.type === "error") showStatus("error", evt.data.message);
-    });
-    renderResult(result);
-  } catch (err) {
-    renderResult({
-      ok: false,
-      error: { code: err.code ?? "NETWORK", message: err.message }
-    });
-  } finally {
-    saveBtn.disabled = false;
-    saveBtn.textContent = "Save to Obsidian";
+    const u = new URL(url);
+    return u.hostname + u.pathname.replace(/\/$/, "");
+  } catch {
+    return url;
   }
 }
 
-function showStatus(step, detail) {
-  const labels = {
-    starting: "Starting...",
-    fetching: "Fetching content...",
-    preparing: "Compressing long content...",
-    drafting: "Drafting note (pass 1)...",
-    extracting: "Extracting...",
-    revising: "Revising (pass 2)...",
-    saving: "Saving to vault...",
-    mirroring: "Mirroring to OSS...",
-    error: "Error"
-  };
-  $("status").hidden = false;
-  $("statusStep").textContent = labels[step] ?? step;
-  $("statusDetail").textContent = detail ?? "";
-}
-
-function renderResult(result) {
-  const el = $("result");
-  el.hidden = false;
-  el.innerHTML = "";
-
-  if (result.ok && result.obsidian) {
-    el.append(
-      div("ok", "✓ Saved"),
-      div("title", result.title ?? ""),
-      div("path", result.obsidian.relativePath ?? result.obsidian.path ?? "")
-    );
-    if (result.oss?.uploaded) {
-      el.append(div("oss", `OSS: ${result.oss.url}`));
-    } else if (result.oss && !result.oss.uploaded) {
-      el.append(div("warn", `OSS: ${result.oss.error?.message ?? "upload failed"}`));
-    }
-    return;
-  }
-
-  if (result.ok && result.skipped) {
-    el.append(
-      div("warn", "↷ Already in vault"),
-      div("path", result.existingPath ?? "")
-    );
-    return;
-  }
-
-  const err = result.error ?? { code: "UNKNOWN", message: "unknown" };
-  el.append(div("bad", `✗ ${err.code}`), div("message", err.message ?? ""));
-}
-
-function div(cls, text) {
-  const d = document.createElement("div");
-  d.className = cls;
-  d.textContent = text;
-  return d;
+function onSave(url) {
+  if (!url || !isSupportedUrl(url)) return;
+  const overrides = { oss: $("ossEnabled").checked };
+  chrome.runtime.sendMessage({ type: "save", url, overrides });
+  window.close();
 }
 
 main();

@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 import { renderStandardTemplate } from "../../src/templates/standard-template.js";
 
 describe("renderStandardTemplate", () => {
-  test("renders header, body, connections, and source sections", () => {
+  test("renders header, body, and Obsidian knowledge connections", () => {
     const markdown = renderStandardTemplate({
       note: {
         title: "AI Agent 架构设计",
@@ -26,9 +26,9 @@ describe("renderStandardTemplate", () => {
     expect(markdown).toContain("## 背景");
     expect(markdown).toContain("- CLI 稳定");
     expect(markdown).toContain("## 知识连接");
-    expect(markdown).toContain("- Agent 工程化");
-    expect(markdown).toContain("## 原文链接");
-    expect(markdown).toContain("https://example.com/article");
+    expect(markdown).toContain("- [[Agent 工程化]]");
+    expect(markdown).toContain("- [[Obsidian 知识库]]");
+    expect(markdown).not.toContain("## 原文链接");
   });
 
   test("defaults author to 未知 when absent", () => {
@@ -109,5 +109,24 @@ describe("renderStandardTemplate", () => {
     expect(markdown).toContain("fetched: 2026-05-09 10:20");
     expect(markdown).toContain("- React");
     expect(markdown).toContain("- RSC");
+  });
+
+  test("preserves existing Obsidian knowledge links", () => {
+    const markdown = renderStandardTemplate({
+      note: {
+        title: "标题",
+        contentType: "综合",
+        tags: ["#综合"],
+        knowledgeConnections: ["[[已有连接]]", "[[已有连接|别名]]"],
+        body: "body"
+      },
+      sourceUrl: "https://example.com/x",
+      createdAt: new Date("2026-05-07T00:00:00.000Z"),
+      fetchedAt: new Date("2026-05-07T10:20:00.000Z")
+    });
+
+    expect(markdown).toContain("- [[已有连接]]");
+    expect(markdown).toContain("- [[已有连接|别名]]");
+    expect(markdown).not.toContain("[[[[已有连接]]]]");
   });
 });

@@ -21,6 +21,11 @@ function stripHash(tag: string): string {
   return tag.replace(/^#/, "");
 }
 
+function formatObsidianLink(connection: string): string {
+  const trimmed = connection.trim();
+  return trimmed.startsWith("[[") && trimmed.endsWith("]]") ? trimmed : `[[${trimmed}]]`;
+}
+
 function renderFrontmatter(input: RenderStandardTemplateInput): string {
   const { note, sourceUrl, author, createdAt, fetchedAt } = input;
   const yaml = YAML.stringify({
@@ -60,12 +65,10 @@ export function renderStandardTemplate(input: RenderStandardTemplateInput): stri
   if (note.knowledgeConnections.length > 0) {
     lines.push("## 知识连接", "");
     note.knowledgeConnections.forEach((connection) => {
-      lines.push(`- ${connection}`);
+      lines.push(`- ${formatObsidianLink(connection)}`);
     });
     lines.push("");
   }
-
-  lines.push("## 原文链接", "", sourceUrl, "");
 
   return lines.join("\n");
 }

@@ -1,63 +1,203 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
-    <title>LinkProcessingAgent Settings</title>
+    <title>LinkProcessing 设置</title>
     <link rel="stylesheet" href="options.css" />
   </head>
   <body>
-    <main>
-      <h1>LinkProcessingAgent Settings</h1>
-
-      <label>
-        Server URL
-        <input id="serverUrl" type="url" placeholder="http://127.0.0.1:8787" />
-      </label>
-      <p class="hint" id="hostHint"></p>
-
-      <label>
-        Bearer token
-        <span class="muted">
-          optional; must match <code>--token</code> on the server
-        </span>
-        <input id="token" type="password" placeholder="empty to disable auth" />
-      </label>
-
-      <label>
-        Default duplicate policy
-        <select id="duplicatePolicy">
-          <option value="create">Create new</option>
-          <option value="skip">Skip if exists</option>
-          <option value="update">Update existing</option>
-        </select>
-      </label>
-
-      <label class="inline">
-        <input id="ossEnabled" type="checkbox" />
-        Mirror to OSS by default (when the server is configured for it)
-      </label>
-
-      <div class="actions">
-        <button id="save" class="primary" type="button">Save</button>
-        <button id="test" type="button">Test connection</button>
+    <!-- Top bar -->
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <span class="logo">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="url(#bolt)"/>
+              <defs>
+                <linearGradient id="bolt" x1="3" y1="2" x2="22" y2="22">
+                  <stop stop-color="#a78bfa"/>
+                  <stop offset="1" stop-color="#6366f1"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </span>
+          <h1>LinkProcessing</h1>
+        </div>
+        <span class="topbar-badge">Extension Settings</span>
       </div>
+    </header>
 
-      <p id="status" class="status"></p>
+    <!-- Shell: sidebar + content -->
+    <div class="shell">
+      <!-- Sidebar navigation -->
+      <aside class="sidebar">
+        <nav class="nav">
+          <button class="nav-item active" data-section="connection">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="20" height="8" x="2" y="2" rx="2" ry="2"/>
+              <rect width="20" height="8" x="2" y="14" rx="2" ry="2"/>
+              <line x1="6" x2="6.01" y1="6" y2="6"/>
+              <line x1="6" x2="6.01" y1="18" y2="18"/>
+            </svg>
+            <span>服务器连接</span>
+          </button>
+          <button class="nav-item" data-section="preferences">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 5H3"/>
+              <path d="M12 19H3"/>
+              <path d="M14 3v4"/>
+              <path d="M16 17v4"/>
+              <path d="M21 12h-9"/>
+              <path d="M21 19h-5"/>
+              <path d="M21 5h-7"/>
+              <path d="M8 10v4"/>
+              <path d="M8 12H3"/>
+            </svg>
+            <span>偏好设置</span>
+          </button>
+          <button class="nav-item" data-section="help">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+              <path d="M12 17h.01"/>
+            </svg>
+            <span>帮助</span>
+          </button>
+        </nav>
+      </aside>
 
-      <section class="help">
-        <h2>How to run the server</h2>
-        <pre><code>pnpm build
+      <!-- Content area -->
+      <main class="content">
+        <!-- Section: Connection -->
+        <section class="panel" id="section-connection">
+          <div class="panel-header">
+            <h2>服务器连接</h2>
+            <p class="panel-desc">配置后端服务的连接地址和认证信息。</p>
+          </div>
+
+          <div class="card">
+            <div class="field-grid">
+              <div class="field">
+                <label for="serverUrl">服务器地址</label>
+                <input id="serverUrl" type="url" placeholder="http://127.0.0.1:8787" spellcheck="false" autocomplete="off" />
+                <p class="hint" id="hostHint"></p>
+              </div>
+
+              <div class="field">
+                <label for="token">Bearer Token</label>
+                <div class="input-group">
+                  <input id="token" type="password" placeholder="留空则不启用认证…" autocomplete="off" />
+                  <button id="toggleToken" class="input-action" title="显示/隐藏" aria-label="显示或隐藏 Token" type="button">
+                    <svg class="icon-eye" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <svg class="icon-eye-off" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+                      <path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/>
+                      <path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/>
+                      <path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/>
+                      <path d="m2 2 20 20"/>
+                    </svg>
+                  </button>
+                </div>
+                <p class="hint muted">可选；需与服务器 <code>--token</code> 参数一致</p>
+              </div>
+            </div>
+
+            <div class="field actions-row">
+              <button id="test" class="btn-secondary" type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>
+                </svg>
+                测试连接
+              </button>
+              <p id="status" class="status"></p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section: Preferences -->
+        <section class="panel" id="section-preferences" hidden>
+          <div class="panel-header">
+            <h2>偏好设置</h2>
+            <p class="panel-desc">自定义保存行为和同步选项。</p>
+          </div>
+
+          <div class="card">
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">去重策略</span>
+                <span class="setting-desc">当 Obsidian 中已存在相同链接时的处理方式。</span>
+              </div>
+              <select id="duplicatePolicy">
+                <option value="create">创建新笔记</option>
+                <option value="skip">已存在则跳过</option>
+                <option value="update">已存在则更新</option>
+              </select>
+            </div>
+
+            <div class="setting-divider"></div>
+
+            <label class="setting-row toggle-row">
+              <div class="setting-info">
+                <span class="setting-label">同步到 OSS</span>
+                <span class="setting-desc">保存笔记的同时上传至对象存储，需服务器已配置 OSS。</span>
+              </div>
+              <input id="ossEnabled" type="checkbox" />
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </label>
+          </div>
+        </section>
+
+        <!-- Section: Help -->
+        <section class="panel" id="section-help" hidden>
+          <div class="panel-header">
+            <h2>帮助</h2>
+            <p class="panel-desc">快速参考和常见问题。</p>
+          </div>
+
+          <div class="help-grid">
+            <div class="card help-card">
+              <div class="help-card-header">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 19h8"/>
+                  <path d="m4 17 6-6-6-6"/>
+                </svg>
+                <span>启动服务</span>
+              </div>
+              <pre><code>pnpm build
 node dist/cli/index.js serve --port 8787
-# with auth:
-node dist/cli/index.js serve --port 8787 --token &lt;secret&gt;</code></pre>
 
-        <h2>Keyboard shortcut</h2>
-        <p>
-          Default: <kbd>Alt+Shift+S</kbd>. Customize at
-          <code>chrome://extensions/shortcuts</code>.
-        </p>
-      </section>
-    </main>
+# 启用认证：
+node dist/cli/index.js serve --port 8787 --token &lt;secret&gt;</code></pre>
+            </div>
+
+            <div class="card help-card">
+              <div class="help-card-header">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10 8h.01"/>
+                  <path d="M12 12h.01"/>
+                  <path d="M14 8h.01"/>
+                  <path d="M16 12h.01"/>
+                  <path d="M18 8h.01"/>
+                  <path d="M6 8h.01"/>
+                  <path d="M7 16h10"/>
+                  <path d="M8 12h.01"/>
+                  <rect width="20" height="16" x="2" y="4" rx="2"/>
+                </svg>
+                <span>快捷键</span>
+              </div>
+              <p><kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd>，可在 <code>chrome://extensions/shortcuts</code> 自定义。</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Sticky save bar -->
+        <div class="save-bar">
+          <button id="save" class="primary" type="button">保存设置</button>
+        </div>
+      </main>
+    </div>
 
     <script type="module" src="options.js"></script>
   </body>

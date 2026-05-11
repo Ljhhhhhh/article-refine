@@ -2,7 +2,29 @@ import { getSettings, setSettings, checkHealth } from "./api.js";
 
 const $ = (id) => document.getElementById(id);
 
+// ── Sidebar navigation ──
+function initNav() {
+  const navItems = document.querySelectorAll(".nav-item");
+  const panels = document.querySelectorAll(".panel");
+
+  navItems.forEach((item) => {
+    item.addEventListener("click", () => {
+      const target = item.dataset.section;
+
+      navItems.forEach((n) => n.classList.remove("active"));
+      item.classList.add("active");
+
+      panels.forEach((p) => {
+        p.hidden = p.id !== `section-${target}`;
+      });
+    });
+  });
+}
+
+// ── Settings ──
 async function init() {
+  initNav();
+
   const s = await getSettings();
   $("serverUrl").value = s.serverUrl;
   $("token").value = s.token ?? "";
@@ -13,6 +35,7 @@ async function init() {
   $("serverUrl").addEventListener("input", updateHostHint);
   $("save").addEventListener("click", onSave);
   $("test").addEventListener("click", onTest);
+  $("toggleToken").addEventListener("click", onToggleToken);
 }
 
 function updateHostHint() {
@@ -22,13 +45,22 @@ function updateHostHint() {
     const u = new URL(raw);
     const isLocal = ["127.0.0.1", "::1", "localhost"].includes(u.hostname);
     hint.textContent = isLocal
-      ? "Loopback binding. Recommended and safe."
-      : "⚠ Non-loopback host. Only use if you trust the network and set a bearer token.";
+      ? "本地回环地址，推荐且安全。"
+      : "非本地地址，请确保网络安全并设置 Token。";
     hint.className = isLocal ? "hint" : "hint warn";
   } catch {
-    hint.textContent = "Enter a valid URL (e.g. http://127.0.0.1:8787).";
+    hint.textContent = "请输入有效的 URL（如 http://127.0.0.1:8787…）。";
     hint.className = "hint warn";
   }
+}
+
+function onToggleToken() {
+  const input = $("token");
+  const btn = $("toggleToken");
+  const isPassword = input.type === "password";
+  input.type = isPassword ? "text" : "password";
+  btn.querySelector(".icon-eye").style.display = isPassword ? "none" : "";
+  btn.querySelector(".icon-eye-off").style.display = isPassword ? "" : "none";
 }
 
 async function onSave() {
@@ -39,19 +71,19 @@ async function onSave() {
     duplicatePolicy: $("duplicatePolicy").value,
     ossEnabled: $("ossEnabled").checked
   });
-  setStatus("Saved.", "ok");
+  setStatus("已保存。", "ok");
 }
 
 async function onTest() {
-  setStatus("Testing...", "");
+  setStatus("测试连接中…", "");
   try {
-    const h = await checkHealth({
+    await checkHealth({
       serverUrl: $("serverUrl").value,
       token: $("token").value
     });
-    setStatus(`Connected: ${JSON.stringify(h)}`, "ok");
+    setStatus("连接成功", "ok");
   } catch (err) {
-    setStatus(`Failed: ${err.message}`, "bad");
+    setStatus(`连接失败：${err.message}`, "bad");
   }
 }
 

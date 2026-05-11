@@ -27,6 +27,54 @@ OPENAI_API_KEY=your-key
 OPENAI_BASE_URL=http://127.0.0.1:11435/v1
 ```
 
+## HTTP Server
+
+The project includes a built-in HTTP server for use with the Chrome extension or other clients.
+
+```bash
+# Development
+pnpm dev -- serve
+
+# Production
+pnpm build
+./dist/cli/index.js serve
+```
+
+The server starts on `http://127.0.0.1:8787` by default.
+
+### Options
+
+```bash
+pnpm dev -- serve --port 3000              # custom port
+pnpm dev -- serve --token my-secret         # require Bearer auth
+pnpm dev -- serve --host 0.0.0.0 --allow-non-local  # bind to all interfaces
+```
+
+### API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/v1/healthz` | Health check (no auth) |
+| GET | `/v1/doctor` | Run diagnostics |
+| POST | `/v1/route` | Classify a URL |
+| POST | `/v1/inspect` | Fetch and inspect a URL |
+| POST | `/v1/process` | Process a URL into a note |
+| POST | `/v1/process?stream=1` | Process with SSE streaming |
+
+Request body for `/v1/process`:
+
+```json
+{
+  "url": "https://example.com/article",
+  "duplicatePolicy": "skip",
+  "oss": true
+}
+```
+
+### Chrome Extension
+
+The `extensions/chrome/` directory contains a companion Chrome extension. After starting the server, load it as an unpacked extension in `chrome://extensions` and it will connect to `http://127.0.0.1:8787` automatically.
+
 ## Commands
 
 ```bash

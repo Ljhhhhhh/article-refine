@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "LinkProcessingAgent",
   "version": "0.1.0",
-  "description": "Save the current tab into Obsidian via a local LinkProcessingAgent server.",
+  "description": "将当前标签页保存到 Obsidian 笔记库。",
   "action": {
     "default_title": "Save to Obsidian",
     "default_popup": "src/popup.html"
@@ -26,7 +26,7 @@
         "default": "Alt+Shift+S",
         "mac": "Alt+Shift+S"
       },
-      "description": "Save current tab to Obsidian"
+      "description": "保存当前标签页到 Obsidian"
     }
   },
   "icons": {

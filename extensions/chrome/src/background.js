@@ -7,12 +7,12 @@ chrome.runtime.onInstalled.addListener(() => {
   try {
     chrome.contextMenus.create({
       id: MENU_ID_PAGE,
-      title: "Save to Obsidian (LinkProcessingAgent)",
+      title: "保存到 Obsidian (LinkProcessingAgent)",
       contexts: ["page"]
     });
     chrome.contextMenus.create({
       id: MENU_ID_LINK,
-      title: "Save link to Obsidian (LinkProcessingAgent)",
+      title: "保存链接到 Obsidian (LinkProcessingAgent)",
       contexts: ["link"]
     });
   } catch (err) {
@@ -51,10 +51,10 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
 async function runSave(url, overrides = {}) {
   if (!isSupportedUrl(url)) {
-    await notify("Cannot save", "Only http(s) URLs are supported.");
+    await notify("无法保存", "仅支持 http/https 链接。");
     return {
       ok: false,
-      error: { code: "INVALID_URL", message: "Only http(s) URLs are supported." }
+      error: { code: "INVALID_URL", message: "仅支持 http/https 链接。" }
     };
   }
 
@@ -63,29 +63,29 @@ async function runSave(url, overrides = {}) {
     await chrome.runtime.openOptionsPage();
     return {
       ok: false,
-      error: { code: "NO_SERVER", message: "Server URL is not configured." }
+      error: { code: "NO_SERVER", message: "未配置服务器地址。" }
     };
   }
 
   try {
-    await notify("Saving to Obsidian...", url);
+    await notify("正在保存到 Obsidian...", url);
     const result = await processOnce(url, overrides, settings);
     if (result.ok && result.obsidian) {
       await notify(
-        "Saved to Obsidian",
+        "已保存到 Obsidian",
         `${result.title ?? ""}\n${result.obsidian.relativePath ?? result.obsidian.path ?? ""}`
       );
     } else if (result.ok && result.skipped) {
-      await notify("Already in vault", result.existingPath ?? url);
+      await notify("笔记已存在", result.existingPath ?? url);
     } else {
       await notify(
-        "Save failed",
-        result.error?.message ?? "Unknown error from server."
+        "保存失败",
+        result.error?.message ?? "服务器返回未知错误。"
       );
     }
     return result;
   } catch (err) {
-    await notify("Save failed", err?.message ?? "Network error.");
+    await notify("保存失败", err?.message ?? "网络错误。");
     return {
       ok: false,
       error: { code: "NETWORK", message: err?.message ?? "Network error." }
