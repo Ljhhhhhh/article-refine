@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+export const modelProviderSchema = z.enum([
+  "siliconflow",
+  "openrouter",
+  "custom-openai-compatible"
+]);
+export type ModelProvider = z.infer<typeof modelProviderSchema>;
+
 export const normalizedLlmProviderSchema = z
   .enum(["mock", "draft-revise", "two-step", "openai"])
   .transform((provider): "mock" | "draft-revise" | "two-step" =>
@@ -58,6 +65,7 @@ export const configSchema = z.object({
   }),
   llm: z.object({
     provider: normalizedLlmProviderSchema.default("draft-revise"),
+    modelProvider: modelProviderSchema.optional(),
     model: z.string().default("mock"),
     draftModel: z.string().optional(),
     reviseModel: z.string().optional(),

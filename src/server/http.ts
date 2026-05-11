@@ -68,6 +68,44 @@ async function handle(
     });
   }
 
+  if (req.method === "GET" && url.pathname === "/v1/settings") {
+    const settings = opts.agent.getSettings();
+    return writeJson(res, 200, {
+      ok: true,
+      settings: settings.llm,
+      persistence: settings.persistence
+    });
+  }
+
+  if (req.method === "PUT" && url.pathname === "/v1/settings") {
+    const body = await readJson(req);
+    if (!body || typeof body !== "object") {
+      return badRequest(res, "Request body must be a JSON object.");
+    }
+    const patch = body.llm as Record<string, unknown> | undefined;
+    if (!patch || typeof patch !== "object") {
+      return badRequest(res, "Field `llm` is required.");
+    }
+    const dryRun = url.searchParams.get("dryRun") === "1";
+
+    try {
+      const result = await opts.agent.updateSettings(
+        patch as Parameters<typeof opts.agent.updateSettings>[0],
+        dryRun
+      );
+      return writeJson(res, result.ok ? 200 : 400, result);
+    } catch (err) {
+      return writeJson(res, 500, {
+        ok: false,
+        error: {
+          code: "SETTINGS_UPDATE_FAILED",
+          message: err instanceof Error ? err.message : "Settings update failed.",
+          retryable: false
+        }
+      });
+    }
+  }
+
   if (req.method === "GET" && url.pathname === "/v1/doctor") {
     const result = await opts.agent.doctor();
     return writeJson(res, 200, result);
@@ -148,7 +186,7 @@ async function handle(
 
 function setCors(res: ServerResponse): void {
   res.setHeader("access-control-allow-origin", "*");
-  res.setHeader("access-control-allow-methods", "GET,POST,OPTIONS");
+  res.setHeader("access-control-allow-methods", "GET,POST,PUT,OPTIONS");
   res.setHeader("access-control-allow-headers", "content-type,authorization");
 }
 

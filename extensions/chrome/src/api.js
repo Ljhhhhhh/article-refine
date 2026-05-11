@@ -139,3 +139,28 @@ export function isSupportedUrl(url) {
     return false;
   }
 }
+
+export async function getServiceSettings(serverUrl, token) {
+  const res = await fetch(`${trimBase(serverUrl)}/v1/settings`, {
+    headers: authHeaders(token)
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error?.message || `GET /v1/settings failed: HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function updateServiceSettings(llm, serverUrl, token, dryRun = false) {
+  const qs = dryRun ? "?dryRun=1" : "";
+  const res = await fetch(`${trimBase(serverUrl)}/v1/settings${qs}`, {
+    method: "PUT",
+    headers: { "content-type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify({ llm })
+  });
+  const body = await res.json();
+  if (!res.ok) {
+    throw new Error(body.error?.message || `PUT /v1/settings failed: HTTP ${res.status}`);
+  }
+  return body;
+}

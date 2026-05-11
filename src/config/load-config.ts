@@ -53,6 +53,19 @@ export async function loadConfig(configPath: string): Promise<LinkProcessingConf
   return configSchema.parse(YAML.parse(raw));
 }
 
+export async function writeConfig(
+  configPath: string,
+  llmPatch: Partial<LinkProcessingConfig["llm"]>
+): Promise<void> {
+  const raw = await readFile(configPath, "utf8");
+  const existing = YAML.parse(raw) ?? {};
+  existing.llm = { ...(existing.llm ?? {}), ...llmPatch };
+  for (const key of Object.keys(existing.llm)) {
+    if (existing.llm[key] === undefined) delete existing.llm[key];
+  }
+  await writeFile(configPath, YAML.stringify(existing), "utf8");
+}
+
 export async function checkConfig(configPath: string): Promise<{ ok: true; config: LinkProcessingConfig } | { ok: false; message: string }> {
   try {
     const config = await loadConfig(configPath);

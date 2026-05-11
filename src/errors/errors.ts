@@ -10,6 +10,7 @@ export type AppErrorCode =
   | "OSS_UPLOAD_FAILED"
   | "OSS_CONFIG_INVALID"
   | "HTTP_SERVER_FAILED"
+  | "SETTINGS_UPDATE_FAILED"
   | "UNKNOWN_ERROR";
 
 export class AppError extends Error {

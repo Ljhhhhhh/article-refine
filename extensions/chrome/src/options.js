@@ -1,6 +1,14 @@
-import { getSettings, setSettings, checkHealth } from "./api.js";
+import { getSettings, setSettings, checkHealth, getServiceSettings, updateServiceSettings } from "./api.js";
 
 const $ = (id) => document.getElementById(id);
+
+const PROVIDER_URLS = {
+  siliconflow: "https://api.siliconflow.cn/v1",
+  openrouter: "https://openrouter.ai/api/v1",
+  "custom-openai-compatible": ""
+};
+
+let baseUrlManuallyEdited = false;
 
 // ── Sidebar navigation ──
 function initNav() {
@@ -36,6 +44,8 @@ async function init() {
   $("save").addEventListener("click", onSave);
   $("test").addEventListener("click", onTest);
   $("toggleToken").addEventListener("click", onToggleToken);
+
+  initModelSection();
 }
 
 function updateHostHint() {
@@ -91,6 +101,134 @@ function setStatus(text, kind) {
   const el = $("status");
   el.textContent = text;
   el.className = `status ${kind}`;
+}
+
+// ── Model section ──
+async function initModelSection() {
+  const localSettings = await getSettings();
+
+  try {
+    const result = await getServiceSettings(localSettings.serverUrl, localSettings.token);
+    if (result.ok && result.settings) {
+      const llm = result.settings;
+      $("modelProvider").value = llm.modelProvider || "custom-openai-compatible";
+      $("llmBaseUrl").value = llm.baseUrl || "";
+      $("llmModel").value = llm.model || "";
+      $("llmDraftModel").value = llm.draftModel || "";
+      $("llmReviseModel").value = llm.reviseModel || "";
+      $("llmLongContentThreshold").value = llm.longContentThreshold || 32000;
+      updateApiKeyHint(llm.apiKeyConfigured);
+    }
+  } catch (err) {
+    setModelStatus("无法加载模型配置：" + err.message, "bad");
+  }
+
+  $("modelProvider").addEventListener("change", onProviderChange);
+  $("llmBaseUrl").addEventListener("input", () => { baseUrlManuallyEdited = true; });
+  $("saveModel").addEventListener("click", onSaveModel);
+  $("testModel").addEventListener("click", onTestModel);
+  $("toggleApiKey").addEventListener("click", onToggleApiKey);
+}
+
+function onProviderChange() {
+  const provider = $("modelProvider").value;
+  const defaultUrl = PROVIDER_URLS[provider];
+  const currentUrl = $("llmBaseUrl").value.trim();
+  const isKnownDefault = Object.values(PROVIDER_URLS).includes(currentUrl);
+  if (!baseUrlManuallyEdited || currentUrl === "" || isKnownDefault) {
+    $("llmBaseUrl").value = defaultUrl;
+    baseUrlManuallyEdited = false;
+  }
+}
+
+async function onSaveModel() {
+  const localSettings = await getSettings();
+  const llm = buildLlmPatch();
+  if (!llm) return;
+
+  setModelStatus("保存中…", "");
+  try {
+    const result = await updateServiceSettings(llm, localSettings.serverUrl, localSettings.token);
+    if (result.ok) {
+      const persistNote = result.persistence?.persisted
+        ? "已写入配置文件。"
+        : "已生效（未持久化，重启后需重新配置）。";
+      setModelStatus("保存成功。" + persistNote, "ok");
+      updateApiKeyHint(true);
+    } else {
+      setModelStatus("保存失败：" + (result.error?.message || "未知错误"), "bad");
+    }
+  } catch (err) {
+    setModelStatus("保存失败：" + err.message, "bad");
+  }
+}
+
+async function onTestModel() {
+  const localSettings = await getSettings();
+  const llm = buildLlmPatch();
+  if (!llm) return;
+
+  setModelStatus("测试中…", "");
+  try {
+    const result = await updateServiceSettings(llm, localSettings.serverUrl, localSettings.token, true);
+    if (result.ok) {
+      setModelStatus("测试通过，配置有效。", "ok");
+    } else {
+      setModelStatus("测试失败：" + (result.error?.message || "未知错误"), "bad");
+    }
+  } catch (err) {
+    setModelStatus("测试失败：" + err.message, "bad");
+  }
+}
+
+function buildLlmPatch() {
+  const model = $("llmModel").value.trim();
+  if (!model) {
+    setModelStatus("默认模型不能为空。", "bad");
+    return null;
+  }
+  const baseUrl = $("llmBaseUrl").value.trim();
+  if (baseUrl && !baseUrl.startsWith("http")) {
+    setModelStatus("Base URL 必须以 http:// 或 https:// 开头。", "bad");
+    return null;
+  }
+
+  const patch = {
+    modelProvider: $("modelProvider").value,
+    model,
+    baseUrl: baseUrl || undefined,
+    draftModel: $("llmDraftModel").value.trim() || undefined,
+    reviseModel: $("llmReviseModel").value.trim() || undefined,
+    longContentThreshold: parseInt($("llmLongContentThreshold").value, 10) || 32000
+  };
+
+  const apiKey = $("llmApiKey").value.trim();
+  if (apiKey) {
+    patch.apiKey = apiKey;
+  }
+
+  return patch;
+}
+
+function updateApiKeyHint(configured) {
+  const hint = $("apiKeyHint");
+  hint.textContent = configured ? "已配置（不显示明文）" : "未配置";
+  hint.className = configured ? "hint" : "hint warn";
+}
+
+function setModelStatus(text, kind) {
+  const el = $("modelStatus");
+  el.textContent = text;
+  el.className = `status ${kind}`;
+}
+
+function onToggleApiKey() {
+  const input = $("llmApiKey");
+  const btn = $("toggleApiKey");
+  const isPassword = input.type === "password";
+  input.type = isPassword ? "text" : "password";
+  btn.querySelector(".icon-eye").style.display = isPassword ? "none" : "";
+  btn.querySelector(".icon-eye-off").style.display = isPassword ? "" : "none";
 }
 
 init();

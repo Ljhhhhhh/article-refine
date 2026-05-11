@@ -1,7 +1,7 @@
 import { access } from "node:fs/promises";
 import { AppError, type FailureResult, toFailureResult } from "../errors/errors.js";
 import { DEFAULT_CONFIG_PATH, defaultConfig, loadConfig } from "./load-config.js";
-import { configSchema, type LinkProcessingConfig } from "./schema.js";
+import { configSchema, type LinkProcessingConfig, type ModelProvider } from "./schema.js";
 
 export type ProcessCliOverrides = {
   vaultPath?: string;
@@ -10,6 +10,7 @@ export type ProcessCliOverrides = {
   llmBaseUrl?: string;
   draftModel?: string;
   reviseModel?: string;
+  modelProvider?: string;
 };
 
 export type ResolvedProcessConfig =
@@ -79,8 +80,14 @@ function applyEnv(config: LinkProcessingConfig): LinkProcessingConfig {
       model: process.env.LINK_PROCESSING_LLM_MODEL ?? config.llm.model,
       draftModel: process.env.LINK_PROCESSING_DRAFT_MODEL ?? config.llm.draftModel,
       reviseModel: process.env.LINK_PROCESSING_REVISE_MODEL ?? config.llm.reviseModel,
-      baseUrl: process.env.OPENAI_BASE_URL ?? config.llm.baseUrl,
-      apiKey: process.env.OPENAI_API_KEY ?? config.llm.apiKey
+      baseUrl:
+        process.env.LINK_PROCESSING_LLM_BASE_URL ??
+        process.env.OPENAI_BASE_URL ??
+        config.llm.baseUrl,
+      apiKey:
+        process.env.LINK_PROCESSING_LLM_API_KEY ??
+        process.env.OPENAI_API_KEY ??
+        config.llm.apiKey
     },
     storage: {
       ...config.storage,
@@ -99,11 +106,23 @@ function applyCli(config: LinkProcessingConfig, cli: ProcessCliOverrides): LinkP
     llm: {
       ...config.llm,
       provider: cli.llmProvider ?? config.llm.provider,
+      modelProvider: cli.modelProvider ?? config.llm.modelProvider,
       model: cli.llmModel ?? config.llm.model,
       draftModel: cli.draftModel ?? config.llm.draftModel,
       reviseModel: cli.reviseModel ?? config.llm.reviseModel,
       baseUrl: cli.llmBaseUrl ?? config.llm.baseUrl
     }
+  });
+}
+
+function inferModelProvider(config: LinkProcessingConfig): LinkProcessingConfig {
+  if (config.llm.modelProvider) return config;
+  let inferred: ModelProvider = "custom-openai-compatible";
+  if (config.llm.baseUrl?.includes("siliconflow.cn")) inferred = "siliconflow";
+  else if (config.llm.baseUrl?.includes("openrouter.ai")) inferred = "openrouter";
+  return configSchema.parse({
+    ...config,
+    llm: { ...config.llm, modelProvider: inferred }
   });
 }
 
@@ -129,7 +148,7 @@ export async function resolveProcessConfig(input: {
       );
     }
 
-    const config = applyCli(applyEnv(base), input.cli);
+    const config = inferModelProvider(applyCli(applyEnv(base), input.cli));
     if (!config.obsidian.vaultPath) {
       throw new AppError(
         "OBSIDIAN_CONFIG_MISSING",

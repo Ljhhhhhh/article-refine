@@ -28,28 +28,55 @@
       </button>
     </header>
 
-    <section class="target">
-      <div class="target-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-        </svg>
-      </div>
-      <div class="target-text">
-        <div id="title" class="title">—</div>
-        <div id="url" class="url">—</div>
-      </div>
+    <!-- Task list -->
+    <section id="taskSection" class="task-section" hidden>
+      <div id="taskList" class="task-list"></div>
     </section>
 
-    <label class="oss-toggle">
-      <input type="checkbox" id="ossEnabled" />
-      <span class="toggle-track"><span class="toggle-thumb"></span></span>
-      <span class="toggle-label">同步到 OSS</span>
-    </label>
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <button class="tab-item active" data-tab="current">当前页面</button>
+      <button class="tab-item" data-tab="manual">手动链接</button>
+    </div>
 
-    <button id="save" class="primary" type="button">
-      <span class="btn-text">保存到 Obsidian</span>
-    </button>
+    <!-- Tab: current page -->
+    <section class="tab-content" data-tab-content="current">
+      <div class="target">
+        <div class="target-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="target-text">
+          <div id="title" class="title">—</div>
+          <div id="url" class="url">—</div>
+        </div>
+      </div>
+
+      <label class="oss-toggle">
+        <input type="checkbox" id="ossEnabled" />
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        <span class="toggle-label">同步到 OSS</span>
+      </label>
+
+      <button id="save" class="primary" type="button">
+        <span class="btn-text">保存到 Obsidian</span>
+      </button>
+    </section>
+
+    <!-- Tab: manual URL -->
+    <section class="tab-content" data-tab-content="manual" hidden>
+      <div class="manual-url">
+        <div class="url-input-row">
+          <input id="manualUrl" type="url" placeholder="https://example.com/article" spellcheck="false" autocomplete="off" />
+        </div>
+        <button id="saveManual" class="primary" type="button">
+          <span class="btn-text">保存该链接</span>
+        </button>
+        <p id="manualError" class="error-text" hidden></p>
+      </div>
+    </section>
 
     <footer>
       <span id="health" class="health" data-ok="0">检查中...</span>

@@ -18,6 +18,8 @@ beforeEach(async () => {
   delete process.env.LINK_PROCESSING_REVISE_MODEL;
   delete process.env.OPENAI_BASE_URL;
   delete process.env.OPENAI_API_KEY;
+  delete process.env.LINK_PROCESSING_LLM_BASE_URL;
+  delete process.env.LINK_PROCESSING_LLM_API_KEY;
   delete process.env.OSS_ENDPOINT;
   delete process.env.OSS_REGION;
   delete process.env.OSS_BUCKET;
@@ -94,6 +96,99 @@ describe("resolveProcessConfig", () => {
     await resolveProcessConfig({ configPath, cli: { vaultPath: path.join(tempDir, "vault") } });
 
     await expect(readFile(configPath, "utf8")).rejects.toThrow();
+  });
+
+  test("LINK_PROCESSING_LLM_API_KEY takes precedence over OPENAI_API_KEY", async () => {
+    const configPath = path.join(tempDir, "link-processing.config.yaml");
+    await writeDefaultConfig(configPath, tempDir);
+    process.env.OPENAI_API_KEY = "old-key";
+    process.env.LINK_PROCESSING_LLM_API_KEY = "new-key";
+
+    const resolved = await resolveProcessConfig({ configPath, cli: {} });
+
+    expect(resolved.ok).toBe(true);
+    if (resolved.ok) {
+      expect(resolved.config.llm.apiKey).toBe("new-key");
+    }
+  });
+
+  test("LINK_PROCESSING_LLM_BASE_URL takes precedence over OPENAI_BASE_URL", async () => {
+    const configPath = path.join(tempDir, "link-processing.config.yaml");
+    await writeDefaultConfig(configPath, tempDir);
+    process.env.OPENAI_BASE_URL = "http://old.example.com/v1";
+    process.env.LINK_PROCESSING_LLM_BASE_URL = "http://new.example.com/v1";
+
+    const resolved = await resolveProcessConfig({ configPath, cli: {} });
+
+    expect(resolved.ok).toBe(true);
+    if (resolved.ok) {
+      expect(resolved.config.llm.baseUrl).toBe("http://new.example.com/v1");
+    }
+  });
+
+  test("infers modelProvider as siliconflow from baseUrl", async () => {
+    const configPath = path.join(tempDir, "link-processing.config.yaml");
+    await writeDefaultConfig(configPath, tempDir);
+
+    const resolved = await resolveProcessConfig({
+      configPath,
+      cli: { llmBaseUrl: "https://api.siliconflow.cn/v1" }
+    });
+
+    expect(resolved.ok).toBe(true);
+    if (resolved.ok) {
+      expect(resolved.config.llm.modelProvider).toBe("siliconflow");
+    }
+  });
+
+  test("infers modelProvider as openrouter from baseUrl", async () => {
+    const configPath = path.join(tempDir, "link-processing.config.yaml");
+    await writeDefaultConfig(configPath, tempDir);
+
+    const resolved = await resolveProcessConfig({
+      configPath,
+      cli: { llmBaseUrl: "https://openrouter.ai/api/v1" }
+    });
+
+    expect(resolved.ok).toBe(true);
+    if (resolved.ok) {
+      expect(resolved.config.llm.modelProvider).toBe("openrouter");
+    }
+  });
+
+  test("infers modelProvider as custom-openai-compatible when baseUrl is unrecognized", async () => {
+    const configPath = path.join(tempDir, "link-processing.config.yaml");
+    await writeDefaultConfig(configPath, tempDir);
+
+    const resolved = await resolveProcessConfig({
+      configPath,
+      cli: { llmBaseUrl: "http://127.0.0.1:11435/v1" }
+    });
+
+    expect(resolved.ok).toBe(true);
+    if (resolved.ok) {
+      expect(resolved.config.llm.modelProvider).toBe("custom-openai-compatible");
+    }
+  });
+
+  test("preserves explicit modelProvider from config file", async () => {
+    const configPath = path.join(tempDir, "link-processing.config.yaml");
+    const YAML = await import("yaml");
+    const { writeFile } = await import("node:fs/promises");
+    const config = {
+      obsidian: { vaultPath: tempDir, categories: { technology: "技术深度", opinion: "观点思考", news: "资讯动态", tutorial: "教程学习", general: "综合" } },
+      llm: { provider: "mock", model: "mock", modelProvider: "openrouter", longContentThreshold: 32000 },
+      processing: { qualityThreshold: 300, defaultFormat: "standard", timeoutSeconds: 120, retryCount: 3 },
+      logging: { level: "info" }
+    };
+    await writeFile(configPath, YAML.stringify(config), "utf8");
+
+    const resolved = await resolveProcessConfig({ configPath, cli: {} });
+
+    expect(resolved.ok).toBe(true);
+    if (resolved.ok) {
+      expect(resolved.config.llm.modelProvider).toBe("openrouter");
+    }
   });
 });
 

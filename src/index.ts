@@ -1,5 +1,7 @@
 import { resolveProcessConfig, type ProcessCliOverrides } from "./config/resolve-config.js";
 import { createExtractor } from "./llm/factory.js";
+import { writeConfig } from "./config/load-config.js";
+import { configSchema, type LinkProcessingConfig } from "./config/schema.js";
 import { WebFetcher } from "./fetchers/web-fetcher.js";
 import { TwitterFetcher } from "./fetchers/twitter-fetcher.js";
 import { OssUploader } from "./storage/oss-uploader.js";
@@ -15,7 +17,6 @@ import { runDoctor, type DoctorResult } from "./core/doctor.js";
 import { AppError } from "./errors/errors.js";
 import type { ContentFetcher } from "./fetchers/fetcher.js";
 import type { NoteExtractor } from "./llm/note-extractor.js";
-import type { LinkProcessingConfig } from "./config/schema.js";
 
 export type {
   ProcessResult,
@@ -26,6 +27,50 @@ export type {
   LinkProcessingConfig
 };
 export { processLink, routeLink, inspectLink, runDoctor };
+
+export type AgentSettings = {
+  llm: {
+    provider: string;
+    modelProvider?: string;
+    model: string;
+    draftModel?: string;
+    reviseModel?: string;
+    baseUrl?: string;
+    apiKeyConfigured: boolean;
+    longContentThreshold: number;
+  };
+  persistence?: {
+    loadedConfigFile: boolean;
+    configPath: string;
+    canPersist: boolean;
+  };
+};
+
+export type LlmSettingsPatch = {
+  provider?: "mock" | "draft-revise" | "two-step" | "openai";
+  modelProvider?: "siliconflow" | "openrouter" | "custom-openai-compatible";
+  model?: string;
+  draftModel?: string;
+  reviseModel?: string;
+  baseUrl?: string;
+  apiKey?: string;
+  clearApiKey?: boolean;
+  longContentThreshold?: number;
+};
+
+export type AgentSettingsUpdateResult = {
+  ok: boolean;
+  settings: AgentSettings;
+  persistence: {
+    persisted: boolean;
+    configPath: string;
+    loadedConfigFile: boolean;
+  };
+  error?: {
+    code: string;
+    message: string;
+  };
+};
 
 export type CreateAgentInput = {
   configPath?: string;
@@ -51,7 +96,24 @@ export type Agent = {
   inspect(url: string): Promise<InspectResult>;
   doctor(): Promise<DoctorResult>;
   close(): Promise<void>;
+  getSettings(): AgentSettings;
+  updateSettings(patch: LlmSettingsPatch, dryRun?: boolean): Promise<AgentSettingsUpdateResult>;
 };
+
+function sanitizeSettings(config: LinkProcessingConfig): AgentSettings {
+  return {
+    llm: {
+      provider: config.llm.provider,
+      modelProvider: config.llm.modelProvider,
+      model: config.llm.model,
+      draftModel: config.llm.draftModel,
+      reviseModel: config.llm.reviseModel,
+      baseUrl: config.llm.baseUrl,
+      apiKeyConfigured: !!config.llm.apiKey,
+      longContentThreshold: config.llm.longContentThreshold
+    }
+  };
+}
 
 export async function createAgent(input: CreateAgentInput = {}): Promise<Agent> {
   const resolved = await resolveProcessConfig({
@@ -62,25 +124,124 @@ export async function createAgent(input: CreateAgentInput = {}): Promise<Agent> 
     throw new AppError(resolved.error.code, resolved.error.message);
   }
 
-  const config = resolved.config;
-  const fetchers = input.fetchers ?? [new TwitterFetcher(), new WebFetcher()];
-  const extractor = input.extractor ?? createExtractor({ ...config.llm });
+  const configPath = resolved.configPath;
+  const loadedConfigFile = resolved.loadedConfigFile;
 
-  const uploader = config.storage.oss.enabled
+  let runtimeConfig = resolved.config;
+  const fetchers = input.fetchers ?? [new TwitterFetcher(), new WebFetcher()];
+  let extractor = input.extractor ?? createExtractor({ ...runtimeConfig.llm });
+
+  const uploader = runtimeConfig.storage.oss.enabled
     ? new OssUploader({
-        endpoint: config.storage.oss.endpoint!,
-        region: config.storage.oss.region!,
-        bucket: config.storage.oss.bucket!,
-        prefix: config.storage.oss.prefix,
-        accessKeyId: config.storage.oss.accessKeyId!,
-        secretAccessKey: config.storage.oss.secretAccessKey!,
-        forcePathStyle: config.storage.oss.forcePathStyle
+        endpoint: runtimeConfig.storage.oss.endpoint!,
+        region: runtimeConfig.storage.oss.region!,
+        bucket: runtimeConfig.storage.oss.bucket!,
+        prefix: runtimeConfig.storage.oss.prefix,
+        accessKeyId: runtimeConfig.storage.oss.accessKeyId!,
+        secretAccessKey: runtimeConfig.storage.oss.secretAccessKey!,
+        forcePathStyle: runtimeConfig.storage.oss.forcePathStyle
       })
     : undefined;
 
+  function currentSettings(): AgentSettings {
+    return {
+      ...sanitizeSettings(runtimeConfig),
+      persistence: {
+        loadedConfigFile,
+        configPath,
+        canPersist: loadedConfigFile
+      }
+    };
+  }
+
   return {
-    config,
-    configPath: resolved.configPath,
+    get config() {
+      return runtimeConfig;
+    },
+    configPath,
+
+    getSettings() {
+      return currentSettings();
+    },
+
+    async updateSettings(patch: LlmSettingsPatch, dryRun = false): Promise<AgentSettingsUpdateResult> {
+      const merged: LinkProcessingConfig["llm"] = { ...runtimeConfig.llm };
+
+      if (patch.provider !== undefined) {
+        merged.provider = patch.provider as LinkProcessingConfig["llm"]["provider"];
+      }
+      if (patch.modelProvider !== undefined) merged.modelProvider = patch.modelProvider;
+      if (patch.model !== undefined) merged.model = patch.model;
+      if (patch.draftModel !== undefined) merged.draftModel = patch.draftModel;
+      if (patch.reviseModel !== undefined) merged.reviseModel = patch.reviseModel;
+      if (patch.baseUrl !== undefined) merged.baseUrl = patch.baseUrl;
+      if (patch.longContentThreshold !== undefined) merged.longContentThreshold = patch.longContentThreshold;
+
+      if (patch.clearApiKey) {
+        merged.apiKey = undefined;
+      } else if (patch.apiKey && patch.apiKey.trim() !== "") {
+        merged.apiKey = patch.apiKey;
+      }
+
+      let newConfig: LinkProcessingConfig;
+      try {
+        newConfig = configSchema.parse({
+          ...runtimeConfig,
+          llm: merged
+        });
+      } catch (err) {
+        return {
+          ok: false,
+          settings: currentSettings(),
+          persistence: { persisted: false, configPath, loadedConfigFile },
+          error: {
+            code: "INVALID_OPTIONS",
+            message: err instanceof Error ? err.message : "Validation failed"
+          }
+        };
+      }
+
+      try {
+        createExtractor({ ...newConfig.llm });
+      } catch (err) {
+        return {
+          ok: false,
+          settings: currentSettings(),
+          persistence: { persisted: false, configPath, loadedConfigFile },
+          error: {
+            code: "INVALID_OPTIONS",
+            message: err instanceof Error ? err.message : "Extractor creation failed"
+          }
+        };
+      }
+
+      if (dryRun) {
+        return {
+          ok: true,
+          settings: sanitizeSettings(newConfig),
+          persistence: { persisted: false, configPath, loadedConfigFile }
+        };
+      }
+
+      let persisted = false;
+      if (loadedConfigFile) {
+        const llmPatchForFile: Record<string, unknown> = { ...newConfig.llm };
+        if (!patch.apiKey && !patch.clearApiKey) {
+          delete llmPatchForFile.apiKey;
+        }
+        await writeConfig(configPath, llmPatchForFile as Partial<LinkProcessingConfig["llm"]>);
+        persisted = true;
+      }
+
+      runtimeConfig = newConfig;
+      extractor = createExtractor({ ...newConfig.llm });
+
+      return {
+        ok: true,
+        settings: sanitizeSettings(newConfig),
+        persistence: { persisted, configPath, loadedConfigFile }
+      };
+    },
 
     route(url) {
       return routeLink(url);
@@ -89,7 +250,7 @@ export async function createAgent(input: CreateAgentInput = {}): Promise<Agent> 
     async inspect(url) {
       return inspectLink(url, {
         fetchers,
-        qualityThreshold: config.processing.qualityThreshold
+        qualityThreshold: runtimeConfig.processing.qualityThreshold
       });
     },
 
@@ -98,16 +259,16 @@ export async function createAgent(input: CreateAgentInput = {}): Promise<Agent> 
         uploader && runtime.oss !== false
           ? {
               uploader,
-              prefix: config.storage.oss.prefix,
-              strict: config.storage.oss.strict
+              prefix: runtimeConfig.storage.oss.prefix,
+              strict: runtimeConfig.storage.oss.strict
             }
           : undefined;
 
       return processLink(url, {
-        vaultPath: config.obsidian.vaultPath,
+        vaultPath: runtimeConfig.obsidian.vaultPath,
         fetchers,
         extractor,
-        qualityThreshold: config.processing.qualityThreshold,
+        qualityThreshold: runtimeConfig.processing.qualityThreshold,
         duplicatePolicy: runtime.duplicatePolicy,
         onProgress: runtime.onProgress,
         oss
@@ -115,7 +276,7 @@ export async function createAgent(input: CreateAgentInput = {}): Promise<Agent> 
     },
 
     async doctor() {
-      return runDoctor({ configPath: resolved.configPath });
+      return runDoctor({ configPath });
     },
 
     async close() {
