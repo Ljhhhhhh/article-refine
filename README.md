@@ -75,6 +75,20 @@ Request body for `/v1/process`:
 
 The `extensions/chrome/` directory contains a companion Chrome extension. After starting the server, load it as an unpacked extension in `chrome://extensions` and it will connect to `http://127.0.0.1:8787` automatically.
 
+### Raycast Extension
+
+The `extensions/raycast/` directory contains a local Raycast extension that invokes the CLI directly. It does not require the HTTP server.
+
+```bash
+cd extensions/raycast
+npm install
+npm run dev
+```
+
+In Raycast, run **Save URL to Obsidian**, enter a URL, and press Enter.
+
+Configure the extension preferences if this repository is not located at `/Users/guanmo/Documents/projects/linkProcessing`, or if you prefer the built `dist` runtime after `pnpm build`.
+
 ## Commands
 
 ```bash
