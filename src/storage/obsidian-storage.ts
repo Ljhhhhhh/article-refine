@@ -20,6 +20,18 @@ export type SavedNote = {
   tags: string[];
 };
 
+export function generateNoteFilename(input: {
+  title: string;
+  contentType: ContentTypeDirectory;
+  now?: () => Date;
+}): string {
+  const now = input.now ?? (() => new Date());
+  const namer = createFileNamer({ exists: () => false, now });
+  const simplifiedTitle = namer.simplifyTitle(input.title) || "未命名链接笔记";
+  const date = now().toISOString().slice(0, 10);
+  return `${date}-${simplifiedTitle}.md`;
+}
+
 const ROOT_DIRECTORIES = ["文章摘要", "标签索引", "作者索引", "时间线"];
 
 async function exists(filePath: string): Promise<boolean> {

@@ -8,6 +8,13 @@ import { OssUploader } from "../../storage/oss-uploader.js";
 import { renderHumanProcessResult } from "../presenters/human.js";
 import { renderJson } from "../presenters/json.js";
 
+export function shouldUseOssOnlyMode(
+  ossConfig: { enabled: boolean; mode: "mirror" | "only" },
+  ossOption: boolean | undefined
+): boolean {
+  return ossOption !== false && ossConfig.enabled && ossConfig.mode === "only";
+}
+
 export function registerProcessCommand(program: Command): void {
   program
     .command("process")
@@ -63,6 +70,27 @@ export function registerProcessCommand(program: Command): void {
         }
 
         const config = resolved.config;
+        const isOssOnly = shouldUseOssOnlyMode(config.storage.oss, options.oss);
+        if (!isOssOnly && !config.obsidian.vaultPath) {
+          const failure = {
+            ok: false,
+            command: "process",
+            sourceUrl: url,
+            error: {
+              code: "OBSIDIAN_CONFIG_MISSING",
+              message:
+                "Provide --vault, LINK_PROCESSING_VAULT, or obsidian.vaultPath when OSS-only mode is disabled.",
+              retryable: false
+            }
+          };
+          process.stdout.write(
+            options.json
+              ? renderJson(failure)
+              : `Missing configuration\n\nError: ${failure.error.code}\nMessage: ${failure.error.message}\n`
+          );
+          process.exitCode = 5;
+          return;
+        }
 
         if (options.skipExisting && options.updateExisting) {
           const failure = {
@@ -93,7 +121,8 @@ export function registerProcessCommand(program: Command): void {
                 drafting: "Pass 1: 起草笔记...",
                 revising: "Pass 2: 对照原文修订...",
                 saving: "保存到 Obsidian...",
-                mirroring: "同步到 OSS..."
+                mirroring: "同步到 OSS...",
+                uploading: "上传到 OSS..."
               };
               process.stderr.write(`  ${labels[step] ?? step}\n`);
             };
@@ -145,7 +174,8 @@ export function registerProcessCommand(program: Command): void {
         }
 
         const result = await processLink(url, {
-          vaultPath: config.obsidian.vaultPath,
+          vaultPath: isOssOnly ? undefined : config.obsidian.vaultPath,
+          mode: isOssOnly ? "only" : "mirror",
           fetchers: [new TwitterFetcher(), new WebFetcher()],
           extractor,
           qualityThreshold: config.processing.qualityThreshold,

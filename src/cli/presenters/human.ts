@@ -15,15 +15,18 @@ export function renderHumanProcessResult(result: ProcessResult): string {
     ].join("\n");
   }
 
-  if ("obsidian" in result) {
+  if ("title" in result) {
     const lines = [
-      "Link processed and saved",
+      result.obsidian ? "Link processed and saved" : "Link processed and uploaded",
       "",
       `Title: ${result.title}`,
-      `Type: ${result.contentType}`,
-      `Saved: ${result.obsidian.path}`,
-      `Tags: ${result.obsidian.tags.join(" ")}`
+      `Type: ${result.contentType}`
     ];
+
+    if (result.obsidian) {
+      lines.push(`Saved: ${result.obsidian.path}`);
+      lines.push(`Tags: ${result.obsidian.tags.join(" ")}`);
+    }
 
     if (result.oss) {
       if (result.oss.uploaded) {

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { shouldUseOssOnlyMode } from "../../src/cli/commands/process.js";
 import { createProgram } from "../../src/cli/index.js";
 
 describe("process command", () => {
@@ -13,6 +14,15 @@ describe("process command", () => {
     delete process.env.LINK_PROCESSING_REVISE_MODEL;
     delete process.env.OPENAI_BASE_URL;
     delete process.env.OPENAI_API_KEY;
+    delete process.env.OSS_ENDPOINT;
+    delete process.env.OSS_REGION;
+    delete process.env.OSS_BUCKET;
+    delete process.env.OSS_ACCESS_KEY_ID;
+    delete process.env.OSS_SECRET_ACCESS_KEY;
+    delete process.env.OSS_PREFIX;
+    delete process.env.OSS_FORCE_PATH_STYLE;
+    delete process.env.OSS_MODE;
+    delete process.env.OSS_STRICT;
   });
 
   afterEach(() => {
@@ -20,17 +30,33 @@ describe("process command", () => {
   });
 
   test("returns JSON config error when vault is missing", async () => {
+    const { mkdtemp, rm } = await import("node:fs/promises");
+    const os = await import("node:os");
+    const path = await import("node:path");
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), "link-processing-missing-config-"));
+    const missingConfigPath = path.join(tempDir, "missing.yaml");
+
     const writeSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
     const program = createProgram();
     program.exitOverride();
 
     await program.parseAsync(
-      ["node", "link-processing", "process", "https://example.dev/agent", "--json"],
+      [
+        "node",
+        "link-processing",
+        "process",
+        "https://example.dev/agent",
+        "--json",
+        "--config",
+        missingConfigPath
+      ],
       { from: "node" }
     );
 
     const output = writeSpy.mock.calls.map((call) => String(call[0])).join("");
     writeSpy.mockRestore();
+    await rm(tempDir, { recursive: true, force: true });
+
     const parsed = JSON.parse(output);
     expect(parsed.ok).toBe(false);
     expect(parsed.error.code).toBe("OBSIDIAN_CONFIG_MISSING");
@@ -115,5 +141,17 @@ describe("process command", () => {
         retryable: false
       }
     });
+  });
+});
+
+describe("shouldUseOssOnlyMode", () => {
+  test("honors --no-oss even when config is OSS-only", () => {
+    expect(shouldUseOssOnlyMode({ enabled: true, mode: "only" }, false)).toBe(false);
+  });
+
+  test("uses OSS-only only when config is OSS-only and OSS is enabled for the run", () => {
+    expect(shouldUseOssOnlyMode({ enabled: true, mode: "only" }, true)).toBe(true);
+    expect(shouldUseOssOnlyMode({ enabled: true, mode: "mirror" }, true)).toBe(false);
+    expect(shouldUseOssOnlyMode({ enabled: false, mode: "only" }, true)).toBe(false);
   });
 });

@@ -11,7 +11,7 @@ export function registerConfigCommand(program: Command): void {
   config
     .command("init")
     .option("--path <path>", "config path", "link-processing.config.yaml")
-    .requiredOption("--vault <path>", "Obsidian vault path")
+    .option("--vault <path>", "Obsidian vault path")
     .action(async (options: { path: string; vault: string }) => {
       await writeDefaultConfig(options.path, options.vault);
       process.stdout.write(`Config written: ${options.path}\n`);
@@ -36,7 +36,9 @@ export function registerConfigCommand(program: Command): void {
       }
 
       try {
-        await mkdir(path.join(resolved.config.obsidian.vaultPath, "文章摘要"), { recursive: true });
+        if (resolved.config.obsidian.vaultPath) {
+          await mkdir(path.join(resolved.config.obsidian.vaultPath, "文章摘要"), { recursive: true });
+        }
         const success = {
           ok: true,
           config: resolved.config,

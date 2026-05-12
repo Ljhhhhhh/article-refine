@@ -242,3 +242,57 @@ describe("resolveProcessConfig OSS", () => {
     }
   });
 });
+
+describe("resolveProcessConfig OSS-only", () => {
+  test("does not require vaultPath when OSS mode is only", async () => {
+    const configPath = path.join(tempDir, "link-processing.config.yaml");
+    await writeDefaultConfig(configPath, "");
+    process.env.OSS_ENDPOINT = "https://s3.oss-cn-hangzhou.aliyuncs.com";
+    process.env.OSS_REGION = "cn-hangzhou";
+    process.env.OSS_BUCKET = "my-bucket";
+    process.env.OSS_ACCESS_KEY_ID = "id";
+    process.env.OSS_SECRET_ACCESS_KEY = "secret";
+    process.env.OSS_MODE = "only";
+
+    const resolved = await resolveProcessConfig({ configPath, cli: {} });
+
+    expect(resolved.ok).toBe(true);
+    if (resolved.ok) {
+      expect(resolved.config.storage.oss.enabled).toBe(true);
+      expect(resolved.config.storage.oss.mode).toBe("only");
+      expect(resolved.config.obsidian.vaultPath).toBe("");
+    }
+  });
+
+  test("fails with OSS_CONFIG_INVALID when OSS-only but credentials missing", async () => {
+    const configPath = path.join(tempDir, "link-processing.config.yaml");
+    await writeDefaultConfig(configPath, "");
+    process.env.OSS_MODE = "only";
+    process.env.OSS_ENDPOINT = "https://s3.oss-cn-hangzhou.aliyuncs.com";
+
+    const resolved = await resolveProcessConfig({ configPath, cli: {} });
+
+    expect(resolved.ok).toBe(false);
+    if (!resolved.ok) {
+      expect(resolved.error.code).toBe("OSS_CONFIG_INVALID");
+    }
+  });
+
+  test("still requires vaultPath when OSS mode is mirror", async () => {
+    const configPath = path.join(tempDir, "link-processing.config.yaml");
+    await writeDefaultConfig(configPath, "");
+    process.env.OSS_ENDPOINT = "https://s3.oss-cn-hangzhou.aliyuncs.com";
+    process.env.OSS_REGION = "cn-hangzhou";
+    process.env.OSS_BUCKET = "my-bucket";
+    process.env.OSS_ACCESS_KEY_ID = "id";
+    process.env.OSS_SECRET_ACCESS_KEY = "secret";
+    process.env.OSS_MODE = "mirror";
+
+    const resolved = await resolveProcessConfig({ configPath, cli: {} });
+
+    expect(resolved.ok).toBe(false);
+    if (!resolved.ok) {
+      expect(resolved.error.code).toBe("OBSIDIAN_CONFIG_MISSING");
+    }
+  });
+});

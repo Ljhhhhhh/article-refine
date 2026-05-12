@@ -75,9 +75,9 @@ Request body for `/v1/process`:
 
 The `extensions/chrome/` directory contains a companion Chrome extension. After starting the server, load it as an unpacked extension in `chrome://extensions` and it will connect to `http://127.0.0.1:8787` automatically.
 
-### Raycast Extension
+### Raycast 扩展
 
-The `extensions/raycast/` directory contains a local Raycast extension that invokes the CLI directly. It does not require the HTTP server.
+`extensions/raycast/` 目录包含一个本地 Raycast 扩展，界面文案为中文，交互保持简约：在 Raycast 中输入一个 URL，扩展直接调用 CLI，不需要 HTTP 服务。
 
 ```bash
 cd extensions/raycast
@@ -85,9 +85,9 @@ npm install
 npm run dev
 ```
 
-In Raycast, run **Save URL to Obsidian**, enter a URL, and press Enter.
+在 Raycast 中运行 **保存链接到 Obsidian**，输入 URL，然后按 Enter。
 
-Configure the extension preferences if this repository is not located at `/Users/guanmo/Documents/projects/linkProcessing`, or if you prefer the built `dist` runtime after `pnpm build`.
+如果仓库不在 `/Users/guanmo/Documents/projects/linkProcessing`，或希望切换源码/构建产物运行方式，请在 Raycast 偏好设置里调整项目路径和运行方式。
 
 ## Commands
 

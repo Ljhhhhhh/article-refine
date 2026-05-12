@@ -264,8 +264,11 @@ export async function createAgent(input: CreateAgentInput = {}): Promise<Agent> 
             }
           : undefined;
 
+      const isOssOnly = runtimeConfig.storage.oss.enabled && runtimeConfig.storage.oss.mode === "only";
+
       return processLink(url, {
-        vaultPath: runtimeConfig.obsidian.vaultPath,
+        vaultPath: isOssOnly ? undefined : runtimeConfig.obsidian.vaultPath,
+        mode: isOssOnly ? "only" : "mirror",
         fetchers,
         extractor,
         qualityThreshold: runtimeConfig.processing.qualityThreshold,

@@ -43,25 +43,36 @@ export async function runDoctor(input: { configPath?: string }): Promise<DoctorR
       : `No config file loaded; using env and CLI defaults.`
   });
 
-  const probePath = path.join(resolved.config.obsidian.vaultPath, ".link-processing", ".doctor-write-test");
-  try {
-    const probeDir = path.dirname(probePath);
-    await mkdir(probeDir, { recursive: true });
-    await writeFile(probePath, "ok", "utf8");
-    await rm(probePath, { force: true });
+  const isOssOnly = resolved.config.storage.oss.enabled && resolved.config.storage.oss.mode === "only";
+
+  if (isOssOnly) {
     checks.push({
       id: "vault",
       label: "Obsidian vault",
       status: "pass",
-      message: `Writable: ${resolved.config.obsidian.vaultPath}`
+      message: "Skipped: OSS-only mode does not require a local vault."
     });
-  } catch (error) {
-    checks.push({
-      id: "vault",
-      label: "Obsidian vault",
-      status: "fail",
-      message: error instanceof Error ? error.message : "Vault write check failed."
-    });
+  } else {
+    const probePath = path.join(resolved.config.obsidian.vaultPath, ".link-processing", ".doctor-write-test");
+    try {
+      const probeDir = path.dirname(probePath);
+      await mkdir(probeDir, { recursive: true });
+      await writeFile(probePath, "ok", "utf8");
+      await rm(probePath, { force: true });
+      checks.push({
+        id: "vault",
+        label: "Obsidian vault",
+        status: "pass",
+        message: `Writable: ${resolved.config.obsidian.vaultPath}`
+      });
+    } catch (error) {
+      checks.push({
+        id: "vault",
+        label: "Obsidian vault",
+        status: "fail",
+        message: error instanceof Error ? error.message : "Vault write check failed."
+      });
+    }
   }
 
   checks.push({
@@ -94,9 +105,11 @@ export async function runDoctor(input: { configPath?: string }): Promise<DoctorR
   if (!oss.enabled) {
     checks.push({
       id: "oss",
-      label: "OSS mirror",
-      status: "warn",
-      message: "OSS mirror is not configured; notes are saved locally only."
+      label: isOssOnly ? "OSS storage" : "OSS mirror",
+      status: isOssOnly ? "fail" : "warn",
+      message: isOssOnly
+        ? "OSS-only mode requires OSS to be enabled and configured."
+        : "OSS mirror is not configured; notes are saved locally only."
     });
   } else if (
     !oss.endpoint ||
@@ -107,7 +120,7 @@ export async function runDoctor(input: { configPath?: string }): Promise<DoctorR
   ) {
     checks.push({
       id: "oss",
-      label: "OSS mirror",
+      label: isOssOnly ? "OSS storage" : "OSS mirror",
       status: "fail",
       message:
         "OSS is enabled but endpoint, region, bucket, and credentials must all be provided."
@@ -126,14 +139,14 @@ export async function runDoctor(input: { configPath?: string }): Promise<DoctorR
       await uploader.head();
       checks.push({
         id: "oss",
-        label: "OSS mirror",
+        label: isOssOnly ? "OSS storage" : "OSS mirror",
         status: "pass",
         message: `Bucket reachable: ${oss.bucket} @ ${oss.endpoint}`
       });
     } catch (error) {
       checks.push({
         id: "oss",
-        label: "OSS mirror",
+        label: isOssOnly ? "OSS storage" : "OSS mirror",
         status: "fail",
         message: error instanceof Error ? error.message : "OSS head bucket failed."
       });

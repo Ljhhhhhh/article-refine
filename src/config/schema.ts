@@ -48,7 +48,7 @@ export const storageConfigSchema = z
 
 export const configSchema = z.object({
   obsidian: z.object({
-    vaultPath: z.string().min(1),
+    vaultPath: z.string().default(""),
     categories: z.object({
       technology: z.literal("技术深度"),
       opinion: z.literal("观点思考"),

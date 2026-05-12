@@ -97,3 +97,41 @@ describe("runDoctor OSS", () => {
     expect(result.ok).toBe(false);
   });
 });
+
+describe("runDoctor OSS-only", () => {
+  test("skips vault probe in OSS-only mode", async () => {
+    const { mockClient } = await import("aws-sdk-client-mock");
+    const { HeadBucketCommand, S3Client } = await import("@aws-sdk/client-s3");
+    const s3Mock = mockClient(S3Client);
+    s3Mock.on(HeadBucketCommand).resolves({});
+
+    const configPath = path.join(tempDir, "link-processing.config.yaml");
+    await writeDefaultConfig(configPath, "");
+    process.env.OSS_ENDPOINT = "https://s3.oss-cn-hangzhou.aliyuncs.com";
+    process.env.OSS_REGION = "cn-hangzhou";
+    process.env.OSS_BUCKET = "my-bucket";
+    process.env.OSS_ACCESS_KEY_ID = "id";
+    process.env.OSS_SECRET_ACCESS_KEY = "secret";
+    process.env.OSS_MODE = "only";
+
+    const result = await runDoctor({ configPath });
+
+    s3Mock.reset();
+    const vaultCheck = result.checks.find((check) => check.id === "vault");
+    expect(vaultCheck?.status).toBe("pass");
+    expect(vaultCheck?.message).toContain("Skipped");
+  });
+
+  test("fails when OSS credentials are missing in OSS-only mode", async () => {
+    const configPath = path.join(tempDir, "link-processing.config.yaml");
+    await writeDefaultConfig(configPath, "");
+    process.env.OSS_MODE = "only";
+    process.env.OSS_ENDPOINT = "https://s3.oss-cn-hangzhou.aliyuncs.com";
+
+    const result = await runDoctor({ configPath });
+
+    expect(result.ok).toBe(false);
+    const configCheck = result.checks.find((check) => check.id === "config");
+    expect(configCheck?.status).toBe("fail");
+  });
+});

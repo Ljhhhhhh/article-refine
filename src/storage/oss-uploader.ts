@@ -1,4 +1,5 @@
 import {
+  GetObjectCommand,
   HeadBucketCommand,
   PutObjectCommand,
   S3Client
@@ -88,6 +89,23 @@ export class OssUploader {
       throw new AppError(
         "OSS_UPLOAD_FAILED",
         error instanceof Error ? error.message : "OSS bucket not reachable."
+      );
+    }
+  }
+
+  async getObject(key: string): Promise<string | undefined> {
+    try {
+      const response = await this.client.send(
+        new GetObjectCommand({ Bucket: this.config.bucket, Key: key })
+      );
+      return await response.Body!.transformToString("utf8");
+    } catch (error: any) {
+      if (error.name === "NoSuchKey" || error.$metadata?.httpStatusCode === 404) {
+        return undefined;
+      }
+      throw new AppError(
+        "OSS_UPLOAD_FAILED",
+        error instanceof Error ? error.message : "OSS get failed."
       );
     }
   }

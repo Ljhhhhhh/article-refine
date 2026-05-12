@@ -69,7 +69,9 @@ export async function writeConfig(
 export async function checkConfig(configPath: string): Promise<{ ok: true; config: LinkProcessingConfig } | { ok: false; message: string }> {
   try {
     const config = await loadConfig(configPath);
-    await mkdir(path.join(config.obsidian.vaultPath, "文章摘要"), { recursive: true });
+    if (config.obsidian.vaultPath) {
+      await mkdir(path.join(config.obsidian.vaultPath, "文章摘要"), { recursive: true });
+    }
     return { ok: true, config };
   } catch (error) {
     return {

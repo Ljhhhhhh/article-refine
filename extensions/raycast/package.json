@@ -2,23 +2,26 @@
   "$schema": "https://www.raycast.com/schemas/extension.json",
   "name": "link-processing",
   "title": "LinkProcessingAgent",
-  "description": "Save a URL into Obsidian by invoking the local LinkProcessingAgent CLI.",
+  "description": "通过本地 LinkProcessingAgent CLI 将链接保存到 Obsidian。",
   "icon": "extension-icon.png",
   "author": "guanmo",
-  "categories": ["Productivity", "Developer Tools"],
+  "categories": [
+    "Productivity",
+    "Developer Tools"
+  ],
   "license": "MIT",
   "commands": [
     {
       "name": "save-url",
-      "title": "Save URL to Obsidian",
-      "description": "Process a URL with LinkProcessingAgent CLI",
+      "title": "保存链接到 Obsidian",
+      "description": "用 LinkProcessingAgent CLI 处理链接",
       "mode": "view",
       "arguments": [
         {
           "name": "url",
           "type": "text",
-          "placeholder": "https://example.com/article",
-          "required": false
+          "placeholder": "粘贴 http/https 链接",
+          "required": true
         }
       ]
     }
@@ -26,8 +29,8 @@
   "preferences": [
     {
       "name": "projectPath",
-      "title": "Project Path",
-      "description": "Absolute path to the linkProcessing project root",
+      "title": "项目路径",
+      "description": "linkProcessing 项目根目录的绝对路径",
       "type": "textfield",
       "required": true,
       "default": "/Users/guanmo/Documents/projects/linkProcessing",
@@ -35,42 +38,65 @@
     },
     {
       "name": "runtime",
-      "title": "Runtime",
-      "description": "Use source via pnpm exec tsx or built dist CLI via node",
+      "title": "运行方式",
+      "description": "构建后使用 dist；开发时可用 tsx 运行源码",
       "type": "dropdown",
       "required": true,
-      "default": "source",
+      "default": "dist",
       "data": [
-        { "title": "Source via pnpm exec tsx", "value": "source" },
-        { "title": "Built dist CLI via node", "value": "dist" }
+        {
+          "title": "构建产物",
+          "value": "dist"
+        },
+        {
+          "title": "源码运行",
+          "value": "source"
+        }
       ]
     },
     {
       "name": "duplicatePolicy",
-      "title": "Duplicate Policy",
-      "description": "How to handle duplicate notes",
+      "title": "重复链接",
+      "description": "遇到重复链接时如何处理",
       "type": "dropdown",
       "required": true,
       "default": "create",
       "data": [
-        { "title": "Create New Note", "value": "create" },
-        { "title": "Skip Existing Note", "value": "skip" },
-        { "title": "Update Existing Note", "value": "update" }
+        {
+          "title": "新建笔记",
+          "value": "create"
+        },
+        {
+          "title": "跳过已有",
+          "value": "skip"
+        },
+        {
+          "title": "更新已有",
+          "value": "update"
+        }
       ]
     },
     {
       "name": "ossEnabled",
-      "title": "Mirror to OSS",
-      "label": "Enable OSS mirroring",
-      "description": "Mirror processed links to Alibaba Cloud OSS",
+      "title": "同步到 OSS",
+      "label": "启用 OSS 同步",
+      "description": "将处理后的笔记同步到已配置的 OSS",
       "type": "checkbox",
       "required": false,
       "default": true
     },
     {
+      "name": "nodePath",
+      "title": "Node 路径",
+      "description": "可选的 node 绝对路径。留空则使用 Raycast 的 Node 运行时。",
+      "type": "textfield",
+      "required": false,
+      "placeholder": "/Users/you/.nvm/versions/node/v22.x.x/bin/node"
+    },
+    {
       "name": "timeoutSeconds",
-      "title": "Timeout Seconds",
-      "description": "CLI timeout in seconds",
+      "title": "超时秒数",
+      "description": "CLI 最长运行时间（秒）",
       "type": "textfield",
       "required": true,
       "default": "180",
