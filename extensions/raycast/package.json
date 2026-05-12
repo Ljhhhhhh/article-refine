@@ -12,13 +12,13 @@
       "name": "save-url",
       "title": "Save URL to Obsidian",
       "description": "Process a URL with LinkProcessingAgent CLI",
-      "mode": "no-view",
+      "mode": "view",
       "arguments": [
         {
           "name": "url",
           "type": "text",
           "placeholder": "https://example.com/article",
-          "required": true
+          "required": false
         }
       ]
     }
