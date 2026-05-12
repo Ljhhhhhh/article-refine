@@ -29,13 +29,10 @@ describe("buildProcessArgs", () => {
     });
 
     expect(invocation).toEqual({
-      command: "pnpm",
+      command: "node",
       args: [
-        "--dir",
-        "/repo",
-        "exec",
-        "tsx",
-        "src/cli/index.ts",
+        "/repo/node_modules/.bin/tsx",
+        "/repo/src/cli/index.ts",
         "process",
         "https://example.com/a",
         "--json",

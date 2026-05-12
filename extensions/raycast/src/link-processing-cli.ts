@@ -86,13 +86,10 @@ export function buildProcessArgs(input: CliInvocationInput): CliInvocation {
   }
 
   return {
-    command: "pnpm",
+    command: "node",
     args: [
-      "--dir",
-      projectPath,
-      "exec",
-      "tsx",
-      "src/cli/index.ts",
+      path.join(projectPath, "node_modules", ".bin", "tsx"),
+      path.join(projectPath, "src", "cli", "index.ts"),
       ...processArgs,
     ],
     cwd: projectPath,
