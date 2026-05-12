@@ -69,20 +69,33 @@ export function buildProcessArgs(input: CliInvocationInput): CliInvocation {
         ? ["--update-existing"]
         : [];
   const ossArgs = input.ossEnabled ? [] : ["--no-oss"];
-  const processArgs = ["process", input.url, "--json", ...duplicateArgs, ...ossArgs];
+  const processArgs = [
+    "process",
+    input.url,
+    "--json",
+    ...duplicateArgs,
+    ...ossArgs,
+  ];
 
   if (input.runtime === "dist") {
     return {
       command: "node",
       args: [path.join(projectPath, "dist", "cli", "index.js"), ...processArgs],
-      cwd: projectPath
+      cwd: projectPath,
     };
   }
 
   return {
     command: "pnpm",
-    args: ["--dir", projectPath, "exec", "tsx", "src/cli/index.ts", ...processArgs],
-    cwd: projectPath
+    args: [
+      "--dir",
+      projectPath,
+      "exec",
+      "tsx",
+      "src/cli/index.ts",
+      ...processArgs,
+    ],
+    cwd: projectPath,
   };
 }
 
@@ -94,37 +107,40 @@ export function parseProcessResult(stdout: string): ProcessResult {
   }
 }
 
-export function formatProcessResult(result: ProcessResult): { title: string; message: string } {
+export function formatProcessResult(result: ProcessResult): {
+  title: string;
+  message: string;
+} {
   if (!result.ok) {
     return {
       title: "Save Failed",
-      message: `${result.error.code}: ${result.error.message}`
+      message: `${result.error.code}: ${result.error.message}`,
     };
   }
 
   if ("skipped" in result && result.skipped) {
     return {
       title: "Already Exists",
-      message: result.existingPath
+      message: result.existingPath,
     };
   }
 
   const notePath = result.obsidian?.relativePath ?? result.obsidian?.path ?? "";
   return {
     title: "Saved to Obsidian",
-    message: [result.title, notePath].filter(Boolean).join(" — ")
+    message: [result.title, notePath].filter(Boolean).join(" — "),
   };
 }
 
 export async function runLinkProcessingCli(
   input: CliInvocationInput,
-  timeoutMs: number
+  timeoutMs: number,
 ): Promise<ProcessResult> {
   const invocation = buildProcessArgs(input);
   const { stdout } = await execFileAsync(invocation.command, invocation.args, {
     cwd: invocation.cwd,
     timeout: timeoutMs,
-    maxBuffer: 1024 * 1024 * 10
+    maxBuffer: 1024 * 1024 * 10,
   });
 
   return parseProcessResult(stdout);

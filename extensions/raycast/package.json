@@ -27,6 +27,7 @@
     {
       "name": "projectPath",
       "title": "Project Path",
+      "description": "Absolute path to the linkProcessing project root",
       "type": "textfield",
       "required": true,
       "default": "/Users/guanmo/Documents/projects/linkProcessing",
@@ -35,6 +36,7 @@
     {
       "name": "runtime",
       "title": "Runtime",
+      "description": "Use source via pnpm exec tsx or built dist CLI via node",
       "type": "dropdown",
       "required": true,
       "default": "source",
@@ -46,6 +48,7 @@
     {
       "name": "duplicatePolicy",
       "title": "Duplicate Policy",
+      "description": "How to handle duplicate notes",
       "type": "dropdown",
       "required": true,
       "default": "create",
@@ -58,6 +61,8 @@
     {
       "name": "ossEnabled",
       "title": "Mirror to OSS",
+      "label": "Enable OSS mirroring",
+      "description": "Mirror processed links to Alibaba Cloud OSS",
       "type": "checkbox",
       "required": false,
       "default": true
@@ -65,6 +70,7 @@
     {
       "name": "timeoutSeconds",
       "title": "Timeout Seconds",
+      "description": "CLI timeout in seconds",
       "type": "textfield",
       "required": true,
       "default": "180",

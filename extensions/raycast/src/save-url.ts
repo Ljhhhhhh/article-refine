@@ -1,10 +1,16 @@
-import { Clipboard, LaunchProps, Toast, getPreferenceValues, showToast } from "@raycast/api";
+import {
+  Clipboard,
+  LaunchProps,
+  Toast,
+  getPreferenceValues,
+  showToast,
+} from "@raycast/api";
 import {
   DuplicatePolicy,
   Runtime,
   formatProcessResult,
   runLinkProcessingCli,
-  validateHttpUrl
+  validateHttpUrl,
 } from "./link-processing-cli.js";
 
 type Arguments = {
@@ -30,11 +36,13 @@ function errorMessage(error: unknown): string {
   return "Unknown error.";
 }
 
-export default async function Command(props: LaunchProps<{ arguments: Arguments }>) {
+export default async function Command(
+  props: LaunchProps<{ arguments: Arguments }>,
+) {
   const preferences = getPreferenceValues<Preferences>();
   const toast = await showToast({
     style: Toast.Style.Animated,
-    title: "Saving to Obsidian"
+    title: "Saving to Obsidian",
   });
 
   try {
@@ -47,9 +55,9 @@ export default async function Command(props: LaunchProps<{ arguments: Arguments 
         runtime: preferences.runtime,
         url,
         duplicatePolicy: preferences.duplicatePolicy,
-        ossEnabled: preferences.ossEnabled !== false
+        ossEnabled: preferences.ossEnabled !== false,
       },
-      parseTimeoutMs(preferences.timeoutSeconds)
+      parseTimeoutMs(preferences.timeoutSeconds),
     );
 
     const formatted = formatProcessResult(result);
@@ -60,7 +68,7 @@ export default async function Command(props: LaunchProps<{ arguments: Arguments 
     if (!result.ok) {
       toast.primaryAction = {
         title: "Copy Error",
-        onAction: () => Clipboard.copy(formatted.message)
+        onAction: () => Clipboard.copy(formatted.message),
       };
     }
   } catch (error) {
@@ -70,7 +78,7 @@ export default async function Command(props: LaunchProps<{ arguments: Arguments 
     toast.style = Toast.Style.Failure;
     toast.primaryAction = {
       title: "Copy Error",
-      onAction: () => Clipboard.copy(message)
+      onAction: () => Clipboard.copy(message),
     };
   }
 }
