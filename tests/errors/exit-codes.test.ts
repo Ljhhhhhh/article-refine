@@ -19,6 +19,16 @@ describe("getExitCodeForErrorCode", () => {
     expect(getExitCodeForErrorCode("OBSIDIAN_WRITE_FAILED")).toBe(5);
   });
 
+  test("maps OSS errors to exit code 6", () => {
+    expect(getExitCodeForErrorCode("OSS_CONFIG_INVALID")).toBe(6);
+    expect(getExitCodeForErrorCode("OSS_UPLOAD_FAILED")).toBe(6);
+  });
+
+  test("maps local service errors to exit code 7", () => {
+    expect(getExitCodeForErrorCode("HTTP_SERVER_FAILED")).toBe(7);
+    expect(getExitCodeForErrorCode("SETTINGS_UPDATE_FAILED")).toBe(7);
+  });
+
   test("maps unknown errors to exit code 1", () => {
     expect(getExitCodeForErrorCode("UNKNOWN_ERROR")).toBe(1);
   });
