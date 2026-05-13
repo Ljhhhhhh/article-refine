@@ -1,5 +1,11 @@
 #!/usr/bin/env node
-import "dotenv/config";
+import { config } from "dotenv";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+config({ path: path.resolve(__dirname, "../../.env") });
+
 import { Command } from "commander";
 import { registerInspectCommand } from "./commands/inspect.js";
 import { registerConfigCommand } from "./commands/config.js";
