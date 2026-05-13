@@ -7,6 +7,7 @@ import { registerDoctorCommand } from "./commands/doctor.js";
 import { registerProcessCommand } from "./commands/process.js";
 import { registerRouteCommand } from "./commands/route.js";
 import { registerServeCommand } from "./commands/serve.js";
+import { registerTuiCommand } from "./commands/tui.js";
 
 export function createProgram(): Command {
   const program = new Command();
@@ -21,6 +22,7 @@ export function createProgram(): Command {
   registerProcessCommand(program);
   registerConfigCommand(program);
   registerDoctorCommand(program);
+  registerTuiCommand(program);
   registerServeCommand(program);
 
   return program;

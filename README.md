@@ -89,6 +89,31 @@ npm run dev
 
 如果仓库不在 `/Users/guanmo/Documents/projects/linkProcessing`，或希望切换源码/构建产物运行方式，请在 Raycast 偏好设置里调整项目路径和运行方式。
 
+## Terminal UI
+
+Build and register the CLI globally:
+
+```bash
+pnpm build
+pnpm link --global
+```
+
+Run the terminal UI from any directory:
+
+```bash
+lpa
+lpa https://mp.weixin.qq.com/s/example
+link-processing tui https://example.com/article
+```
+
+Shortcuts:
+
+- `q` or `Esc`: quit
+- `r`: retry the current URL
+- `Enter`: submit a URL on the input screen
+
+The TUI reuses the same configuration as `link-processing process`: `.env`, `link-processing.config.yaml`, `LINK_PROCESSING_*`, `OPENAI_*`, and `OSS_*` are resolved through the shared process runner.
+
 ## Commands
 
 ```bash

@@ -1,12 +1,7 @@
 import type { Command } from "commander";
-import { processLink, type ProcessOptions } from "../../core/process-link.js";
-import { WebFetcher } from "../../fetchers/web-fetcher.js";
-import { TwitterFetcher } from "../../fetchers/twitter-fetcher.js";
-import { createExtractor } from "../../llm/factory.js";
-import { resolveProcessConfig } from "../../config/resolve-config.js";
-import { OssUploader } from "../../storage/oss-uploader.js";
 import { renderHumanProcessResult } from "../presenters/human.js";
 import { renderJson } from "../presenters/json.js";
+import { runProcessCommand } from "../process-runner.js";
 
 export function shouldUseOssOnlyMode(
   ossConfig: { enabled: boolean; mode: "mirror" | "only" },
@@ -47,71 +42,6 @@ export function registerProcessCommand(program: Command): void {
           oss?: boolean;
         }
       ) => {
-        const resolved = await resolveProcessConfig({
-          configPath: options.config,
-          cli: {
-            vaultPath: options.vault,
-            llmProvider: options.llmProvider,
-            llmModel: options.llmModel,
-            llmBaseUrl: options.llmBaseUrl,
-            draftModel: options.draftModel,
-            reviseModel: options.reviseModel
-          }
-        });
-
-        if (!resolved.ok) {
-          process.stdout.write(
-            options.json
-              ? renderJson(resolved)
-              : `Missing configuration\n\nError: ${resolved.error.code}\nMessage: ${resolved.error.message}\n`
-          );
-          process.exitCode = 5;
-          return;
-        }
-
-        const config = resolved.config;
-        const isOssOnly = shouldUseOssOnlyMode(config.storage.oss, options.oss);
-        if (!isOssOnly && !config.obsidian.vaultPath) {
-          const failure = {
-            ok: false,
-            command: "process",
-            sourceUrl: url,
-            error: {
-              code: "OBSIDIAN_CONFIG_MISSING",
-              message:
-                "Provide --vault, LINK_PROCESSING_VAULT, or obsidian.vaultPath when OSS-only mode is disabled.",
-              retryable: false
-            }
-          };
-          process.stdout.write(
-            options.json
-              ? renderJson(failure)
-              : `Missing configuration\n\nError: ${failure.error.code}\nMessage: ${failure.error.message}\n`
-          );
-          process.exitCode = 5;
-          return;
-        }
-
-        if (options.skipExisting && options.updateExisting) {
-          const failure = {
-            ok: false,
-            command: "process",
-            sourceUrl: url,
-            error: {
-              code: "INVALID_OPTIONS",
-              message: "Cannot use --skip-existing and --update-existing together.",
-              retryable: false
-            }
-          };
-          process.stdout.write(
-            options.json
-              ? renderJson(failure)
-              : `Error: ${failure.error.message}\n`
-          );
-          process.exitCode = 2;
-          return;
-        }
-
         const onProgress = options.json
           ? undefined
           : (step: string) => {
@@ -120,6 +50,7 @@ export function registerProcessCommand(program: Command): void {
                 preparing: "准备阶段：长文压缩（如需要）...",
                 drafting: "Pass 1: 起草笔记...",
                 revising: "Pass 2: 对照原文修订...",
+                extracting: "正在生成结构化笔记...",
                 saving: "保存到 Obsidian...",
                 mirroring: "同步到 OSS...",
                 uploading: "上传到 OSS..."
@@ -127,69 +58,9 @@ export function registerProcessCommand(program: Command): void {
               process.stderr.write(`  ${labels[step] ?? step}\n`);
             };
 
-        let extractor;
-        try {
-          extractor = createExtractor({
-            ...config.llm,
-            onProgress
-          });
-        } catch (error) {
-          const message = error instanceof Error ? error.message : "Extractor creation failed.";
-          const failure = {
-            ok: false,
-            command: "process",
-            sourceUrl: url,
-            error: {
-              code: "LLM_OUTPUT_INVALID",
-              message,
-              retryable: false
-            }
-          };
-          process.stdout.write(options.json ? renderJson(failure) : `Error: ${message}\n`);
-          process.exitCode = 4;
-          return;
-        }
-
-        const duplicatePolicy = options.updateExisting
-          ? "update"
-          : options.skipExisting
-            ? "skip"
-            : "create";
-
-        let oss: ProcessOptions["oss"];
-        if (config.storage.oss.enabled && options.oss !== false) {
-          oss = {
-            uploader: new OssUploader({
-              endpoint: config.storage.oss.endpoint!,
-              region: config.storage.oss.region!,
-              bucket: config.storage.oss.bucket!,
-              prefix: config.storage.oss.prefix,
-              accessKeyId: config.storage.oss.accessKeyId!,
-              secretAccessKey: config.storage.oss.secretAccessKey!,
-              forcePathStyle: config.storage.oss.forcePathStyle
-            }),
-            prefix: config.storage.oss.prefix,
-            strict: config.storage.oss.strict
-          };
-        }
-
-        const result = await processLink(url, {
-          vaultPath: isOssOnly ? undefined : config.obsidian.vaultPath,
-          mode: isOssOnly ? "only" : "mirror",
-          fetchers: [new TwitterFetcher(), new WebFetcher()],
-          extractor,
-          qualityThreshold: config.processing.qualityThreshold,
-          onProgress,
-          duplicatePolicy,
-          oss
-        });
-
-        process.stdout.write(
-          options.json ? renderJson(result) : renderHumanProcessResult(result)
-        );
-        if (!result.ok) {
-          process.exitCode = 1;
-        }
+        const result = await runProcessCommand(url, { ...options, onProgress });
+        process.stdout.write(options.json ? renderJson(result) : renderHumanProcessResult(result));
+        if (!result.ok) process.exitCode = 1;
       }
     );
 }
