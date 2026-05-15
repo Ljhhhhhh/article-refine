@@ -20,7 +20,8 @@ export function renderHumanProcessResult(result: ProcessResult): string {
       result.obsidian ? "Link processed and saved" : "Link processed and uploaded",
       "",
       `Title: ${result.title}`,
-      `Type: ${result.contentType}`
+      `Type: ${result.contentType}`,
+      `Clickbait: ${result.clickbaitIndex}/10`
     ];
 
     if (result.obsidian) {

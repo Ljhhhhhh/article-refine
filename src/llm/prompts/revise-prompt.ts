@@ -29,6 +29,10 @@ export const REVISE_PROMPT = `<role>
 
 [7] 遗漏检测：原文中重要但草稿中缺失的核心内容。
     - 补入 body 合适位置。
+
+[8] 标题党指数：clickbaitIndex 的评分是否合理？
+    - 对比原文标题与正文实际内容，评分是否恰当？
+    - 标题夸大但内容充实 → 适当调高；标题朴实内容对应 → 保持低分。
 </review_checklist>
 
 <revision_rules>
@@ -47,6 +51,7 @@ body 字段内的换行使用 \\n 转义。
   "contentType": "技术深度" | "观点思考" | "教程学习" | "资讯动态" | "综合",
   "tags": ["#..."],
   "knowledgeConnections": ["..."],
+  "clickbaitIndex": number,
   "body": "Markdown 格式的笔记正文"
 }
 </output>`;

@@ -16,6 +16,7 @@ export const processedNoteSchema = z.object({
     .transform((arr) => arr.map((t) => (t.startsWith("#") ? t : `#${t}`)).slice(0, 8))
     .pipe(z.array(z.string()).min(1)),
   knowledgeConnections: z.array(z.string()).default([]),
+  clickbaitIndex: z.number().int().min(1).max(10).default(5),
   body: z.string().min(1)
 });
 

@@ -35,7 +35,8 @@ function renderFrontmatter(input: RenderStandardTemplateInput): string {
     content_type: note.contentType,
     created: formatDate(createdAt),
     fetched: formatDateTime(fetchedAt),
-    tags: note.tags.map(stripHash)
+    tags: note.tags.map(stripHash),
+    clickbait_index: note.clickbaitIndex
   });
 
   return ["---", yaml.trimEnd(), "---", ""].join("\n");
@@ -53,6 +54,7 @@ export function renderStandardTemplate(input: RenderStandardTemplateInput): stri
     `> 作者：${author ?? "未知"}`,
     `> 抓取时间：${formatDateTime(fetchedAt)}`,
     `> 标签：${note.tags.join(" ")}`,
+    `> 标题党指数：${note.clickbaitIndex}/10`,
     "",
     "---",
     "",

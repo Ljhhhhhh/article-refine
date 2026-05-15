@@ -34,6 +34,7 @@ export type ProcessSuccessResult = {
   linkType: LinkType;
   contentType: ContentType;
   title: string;
+  clickbaitIndex: number;
   obsidian?: SavedNote;
   oss?: ProcessOssResult;
 };
@@ -175,6 +176,7 @@ async function processOssOnly(
     linkType: routed.linkType,
     contentType: note.contentType,
     title: note.title,
+    clickbaitIndex: note.clickbaitIndex,
     oss: ossOutcome
   };
 }
@@ -282,6 +284,7 @@ async function processMirror(
     linkType: routed.linkType,
     contentType: note.contentType,
     title: note.title,
+    clickbaitIndex: note.clickbaitIndex,
     obsidian,
     ...(ossOutcome ? { oss: ossOutcome } : {})
   };
