@@ -25,10 +25,10 @@ export class Reviser {
     this.client = new OpenAI({
       apiKey: options.apiKey,
       baseURL: options.baseUrl,
-      fetch: proxyFetch as typeof fetch
+      fetch: proxyFetch as typeof fetch,
     });
     this.model = options.model;
-    this.maxTokens = options.maxTokens ?? 12288;
+    this.maxTokens = options.maxTokens ?? 65536;
   }
 
   async revise(input: ReviseInput): Promise<ProcessedNote> {
@@ -39,7 +39,7 @@ export class Reviser {
       "=== 当前笔记草稿 ===",
       JSON.stringify(input.draft, null, 2),
       "",
-      "请对照原文审查草稿，输出修订后的完整笔记 JSON。"
+      "请对照原文审查草稿，输出修订后的完整笔记 JSON。",
     ].join("\n");
 
     const response = await this.client.chat.completions.create({
@@ -47,8 +47,8 @@ export class Reviser {
       max_tokens: this.maxTokens,
       messages: [
         { role: "system", content: REVISE_PROMPT },
-        { role: "user", content: userMessage }
-      ]
+        { role: "user", content: userMessage },
+      ],
     });
 
     const raw = response.choices[0]?.message?.content ?? "";

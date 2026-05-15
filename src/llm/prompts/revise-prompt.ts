@@ -1,6 +1,6 @@
-export const REVISE_PROMPT = `<role>
+export const REVISE_PROMPT = `/no_think
+<role>
 你是一位严格的审稿人。你的任务是对照原文审查一份笔记草稿，找出问题并产出修订版。
-你需要认真思考每一项审查点，不要放过任何遗漏或幻觉。
 </role>
 
 <review_checklist>

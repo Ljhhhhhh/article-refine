@@ -28,10 +28,10 @@ export class DraftGenerator {
     this.client = new OpenAI({
       apiKey: options.apiKey,
       baseURL: options.baseUrl,
-      fetch: proxyFetch as typeof fetch
+      fetch: proxyFetch as typeof fetch,
     });
     this.model = options.model;
-    this.maxTokens = options.maxTokens ?? 16384;
+    this.maxTokens = options.maxTokens ?? 65536;
   }
 
   async generate(input: DraftInput): Promise<ProcessedNote> {
@@ -41,7 +41,7 @@ export class DraftGenerator {
       input.author ? `作者：${input.author}` : null,
       "",
       "=== 原文（Markdown 格式）===",
-      input.rawText
+      input.rawText,
     ]
       .filter((line) => line !== null)
       .join("\n");
@@ -51,8 +51,8 @@ export class DraftGenerator {
       max_tokens: this.maxTokens,
       messages: [
         { role: "system", content: DRAFT_PROMPT },
-        { role: "user", content: userMessage }
-      ]
+        { role: "user", content: userMessage },
+      ],
     });
 
     const choice = response.choices[0];
@@ -61,7 +61,7 @@ export class DraftGenerator {
       throw new AppError(
         "LLM_OUTPUT_INVALID",
         `Draft output was truncated at max_tokens=${this.maxTokens}. ` +
-          `Increase --draft-max-tokens or LINK_PROCESSING_DRAFT_MAX_TOKENS.`
+          `Increase --draft-max-tokens or LINK_PROCESSING_DRAFT_MAX_TOKENS.`,
       );
     }
     const text = raw.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
