@@ -19,6 +19,9 @@ function fixLiteralNewlinesInStrings(json: string): string {
  */
 function stripThinking(raw: string): string {
   let text = raw;
+  // Strip markdown code fences (```json ... ``` or ``` ... ```)
+  // Handle both complete and truncated (missing closing fence) responses
+  text = text.replace(/^```(?:json|JSON)?\s*\n?/, "").replace(/\n?```\s*$/, "");
   // <think>...</think> (Qwen3 / DeepSeek-R1 style)
   text = text.replace(/<think>[\s\S]*?<\/think>/g, "");
   // Thinking Process: ... up to first {

@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { proxyFetch } from "../fetchers/proxy-fetch.js";
+import { AppError } from "../errors/errors.js";
 import { processedNoteSchema, type ProcessedNote } from "./schema.js";
 import { REVISE_PROMPT } from "./prompts/revise-prompt.js";
 import { extractJson } from "./extract-json.js";
@@ -51,7 +52,14 @@ export class Reviser {
       ],
     });
 
-    const raw = response.choices[0]?.message?.content ?? "";
+    const choice = response.choices?.[0];
+    if (!choice) {
+      throw new AppError(
+        "LLM_OUTPUT_INVALID",
+        `LLM returned empty response (no choices). Model: ${this.model}`,
+      );
+    }
+    const raw = choice.message?.content ?? "";
     // Strip <think> blocks from Qwen3-style thinking output, keep the JSON.
     const text = raw.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
     const parsed = extractJson(text);

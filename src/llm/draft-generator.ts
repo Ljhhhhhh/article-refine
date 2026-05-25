@@ -55,9 +55,15 @@ export class DraftGenerator {
       ],
     });
 
-    const choice = response.choices[0];
-    const raw = choice?.message?.content ?? "";
-    if (choice?.finish_reason === "length") {
+    const choice = response.choices?.[0];
+    if (!choice) {
+      throw new AppError(
+        "LLM_OUTPUT_INVALID",
+        `LLM returned empty response (no choices). Model: ${this.model}, BaseURL: ${this.client.baseURL}`,
+      );
+    }
+    const raw = choice.message?.content ?? "";
+    if (choice.finish_reason === "length") {
       throw new AppError(
         "LLM_OUTPUT_INVALID",
         `Draft output was truncated at max_tokens=${this.maxTokens}. ` +

@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { proxyFetch } from "../fetchers/proxy-fetch.js";
+import { AppError } from "../errors/errors.js";
 import { COMPRESS_PROMPT } from "./prompts/compress-prompt.js";
 
 export type CompressorOptions = {
@@ -72,7 +73,14 @@ async function compressChunk(
       { role: "user", content: chunk }
     ]
   });
-  const raw = response.choices[0]?.message?.content ?? "";
+  const choice = response.choices?.[0];
+  if (!choice) {
+    throw new AppError(
+      "LLM_OUTPUT_INVALID",
+      `LLM returned empty response (no choices) during compression.`,
+    );
+  }
+  const raw = choice.message?.content ?? "";
   return raw.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
 }
 
