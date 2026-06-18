@@ -1,6 +1,11 @@
 # 观（Guan）
 
-CLI-first link processing for Obsidian. Give it a URL, and it fetches the content, creates a high-fidelity Markdown note, and saves it into your vault.
+面向 Obsidian 的链接处理 CLI。输入一个 URL 或本地 Markdown 文件，Guan 会抓取/读取内容、生成结构化笔记，并保存到 Obsidian vault；也可以同步到 S3 兼容对象存储，供内置 Reader 网站展示。
+
+当前项目只保留两个入口：
+
+- CLI / TUI：处理链接、生成笔记、维护索引。
+- Reader 网站：读取 OSS 上的 `public-index.json` 和 Markdown 文章并渲染。
 
 ## Quickstart
 
@@ -12,309 +17,272 @@ pnpm dev -- doctor
 pnpm dev -- process https://example.com/article --llm-provider mock
 ```
 
-Use `mock` only for smoke tests. For real notes, configure an OpenAI-compatible endpoint:
+`mock` 只适合冒烟测试。真实生成笔记时，复制 `.env.example` 并配置 OpenAI 兼容接口：
 
 ```bash
 cp .env.example .env
 ```
 
-Then edit:
+最小配置：
 
 ```bash
+LINK_PROCESSING_VAULT=/path/to/obsidian-vault
 LINK_PROCESSING_LLM_PROVIDER=draft-revise
 LINK_PROCESSING_LLM_MODEL=Qwen3.5-4B-OptiQ-4bit
 OPENAI_API_KEY=your-key
 OPENAI_BASE_URL=http://127.0.0.1:11435/v1
 ```
 
-## HTTP Server
+## CLI
 
-The project includes a built-in HTTP server for use with the Chrome extension or other clients.
+开发模式：
 
 ```bash
-# Development
-pnpm dev -- serve
+pnpm dev -- process https://example.com/article
+pnpm dev -- process ./article.md
+```
 
-# Production
+构建后运行：
+
+```bash
 pnpm build
-./dist/cli/index.js serve
+node dist/cli/index.js process https://example.com/article
 ```
 
-The server starts on `http://127.0.0.1:8787` by default.
-
-### Options
+全局注册后运行：
 
 ```bash
-pnpm dev -- serve --port 3000              # custom port
-pnpm dev -- serve --token my-secret         # require Bearer auth
-pnpm dev -- serve --host 0.0.0.0 --allow-non-local  # bind to all interfaces
+pnpm link --global
+link-processing process https://example.com/article
+lpa https://example.com/article
 ```
 
-### API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/v1/healthz` | Health check (no auth) |
-| GET | `/v1/doctor` | Run diagnostics |
-| POST | `/v1/route` | Classify a URL |
-| POST | `/v1/inspect` | Fetch and inspect a URL |
-| POST | `/v1/process` | Process a URL into a note |
-| POST | `/v1/process?stream=1` | Process with SSE streaming |
-
-Request body for `/v1/process`:
-
-```json
-{
-  "url": "https://example.com/article",
-  "duplicatePolicy": "skip",
-  "oss": true
-}
-```
-
-### Chrome Extension
-
-The `extensions/chrome/` directory contains a companion Chrome extension. After starting the server, load it as an unpacked extension in `chrome://extensions` and it will connect to `http://127.0.0.1:8787` automatically.
-
-### Raycast 扩展
-
-`extensions/raycast/` 目录包含一个本地 Raycast 扩展，界面文案为中文，交互保持简约：在 Raycast 中输入一个 URL，扩展直接调用 CLI，不需要 HTTP 服务。
+常用命令：
 
 ```bash
-cd extensions/raycast
-npm install
-npm run dev
+link-processing route <url> --json
+link-processing inspect <url> --json
+link-processing process <url-or-md-file>
+link-processing process <url-or-md-file> --json
+link-processing process <url-or-md-file> --skip-existing
+link-processing process <url-or-md-file> --update-existing
+link-processing process <url-or-md-file> --no-oss
+link-processing config init --vault /path/to/vault
+link-processing config check
+link-processing doctor
+link-processing reader sync-index
 ```
 
-在 Raycast 中运行 **保存链接到 Obsidian**，输入 URL，然后按 Enter。
+`process` 常用选项：
 
-如果仓库不在 `/Users/guanmo/Documents/projects/linkProcessing`，或希望切换源码/构建产物运行方式，请在 Raycast 偏好设置里调整项目路径和运行方式。
+- `--vault <path>`：覆盖 Obsidian vault 路径。
+- `--llm-provider <provider>`：`mock`、`draft-revise` 或 `two-step`。
+- `--llm-model <model>`：同时作为 draft/revise 的默认模型。
+- `--draft-model <model>`：Pass 1 起草模型。
+- `--revise-model <model>`：Pass 2 修订模型。
+- `--llm-base-url <url>`：OpenAI 兼容接口地址。
+- `--config <path>`：配置文件路径，默认 `link-processing.config.yaml`。
+- `--skip-existing`：source URL 已存在时跳过。
+- `--update-existing`：source URL 已存在时覆盖原笔记。
+- `--json`：输出机器可读 JSON。
 
-## Terminal UI
+## TUI
 
-Build and register the CLI globally:
+构建并全局注册后，可以从任意目录启动终端 UI：
 
 ```bash
 pnpm build
 pnpm link --global
-```
-
-Run the terminal UI from any directory:
-
-```bash
 lpa
 lpa https://mp.weixin.qq.com/s/example
 link-processing tui https://example.com/article
 ```
 
-Shortcuts:
+快捷键：
 
-- `q` or `Esc`: quit
-- `r`: retry the current URL
-- `Enter`: submit a URL on the input screen
+- `Enter`：提交输入的 URL。
+- `r`：重试当前 URL。
+- `q` 或 `Esc`：退出。
 
-The TUI reuses the same configuration as `link-processing process`: `.env`, `link-processing.config.yaml`, `LINK_PROCESSING_*`, `OPENAI_*`, and `OSS_*` are resolved through the shared process runner.
+TUI 复用 `process` 的配置解析逻辑，包括 `.env`、`link-processing.config.yaml`、`LINK_PROCESSING_*`、`OPENAI_*` 和 `OSS_*`。
 
-## Commands
+## 配置优先级
 
-```bash
-link-processing route <url> --json
-link-processing inspect <url> --json
-link-processing process <url>
-link-processing process <url> --json
-link-processing process <url> --skip-existing
-link-processing process <url> --update-existing
-link-processing config init --vault /path/to/vault
-link-processing config check
-link-processing doctor
-```
+`process` 按以下顺序解析配置：
 
-## Config Precedence
+1. CLI flags，例如 `--vault`、`--llm-provider`、`--llm-model`。
+2. 环境变量，例如 `LINK_PROCESSING_VAULT`、`OPENAI_API_KEY`。
+3. `link-processing.config.yaml`。
+4. 内置默认值。
 
-`process` resolves configuration in this order:
-
-1. CLI flags such as `--vault`, `--llm-provider`, and `--llm-model`
-2. Environment variables such as `LINK_PROCESSING_VAULT` and `OPENAI_API_KEY`
-3. `link-processing.config.yaml`
-4. Built-in defaults
-
-## Link Type Support
+## 支持的链接类型
 
 | Link type | Status | Process support | Notes |
 |-----------|--------|-----------------|-------|
-| Twitter/X | stable | yes | Uses fxtwitter JSON parsing. |
-| Technical blog | stable | yes | Uses HTTP fetch, Readability, and Markdown conversion. |
-| General article | stable | yes | Best for article-like HTML pages. |
-| Docs | stable | yes | Static docs pages only; no crawler. |
-| WeChat | beta | yes | HTTP extraction may work; Playwright fallback is not implemented. |
-| Academic | beta | yes | HTML pages may work; PDF parsing is not implemented. |
-| Video | route-only | no | Metadata and transcript extraction are not implemented. |
+| Twitter/X | stable | yes | 使用 fxtwitter JSON 解析。 |
+| Technical blog | stable | yes | 使用 HTTP fetch、Readability 和 Markdown 转换。 |
+| General article | stable | yes | 适合 article-like HTML 页面。 |
+| Docs | stable | yes | 支持静态文档页，不做站点爬取。 |
+| WeChat | beta | yes | HTTP 提取可用；未实现 Playwright fallback。 |
+| Academic | beta | yes | HTML 页面可能可用；未实现 PDF 解析。 |
+| Video | route-only | no | 未实现元数据和转录提取。 |
 
-## Obsidian Output
+## Obsidian 输出
 
-Notes are saved under:
+笔记默认保存到：
 
 ```text
 文章摘要/<内容类型>/<YYYY-MM-DD-title>.md
 ```
 
-Each note includes YAML frontmatter, readable source metadata, the generated Markdown body, knowledge connections, and the original URL.
+每篇笔记包含 YAML frontmatter、来源信息、生成后的 Markdown 正文、知识连接和原始 URL。
 
-## Deduplication
-
-The CLI maintains a vault-local source index at:
+本地去重索引位于 vault 内：
 
 ```text
 .link-processing/source-index.json
 ```
 
-Use:
+去重策略：
 
 ```bash
 link-processing process <url> --skip-existing
 link-processing process <url> --update-existing
 ```
 
-## OSS / S3-compatible Mirror
+## OSS / S3 兼容对象存储
 
-When OSS credentials are present in the environment, each processed note is mirrored to the configured bucket after the local save. In `OSS_MODE=only`, the note is uploaded to OSS without requiring an Obsidian vault.
+配置 `OSS_*` 后，`process` 会把生成的笔记同步到对象存储。支持 AWS S3、阿里云 OSS S3 兼容接口、MinIO、Cloudflare R2、腾讯 COS、七牛 Kodo 等 S3 兼容服务。
 
-Uploaded notes use this key layout:
+最小环境变量：
+
+```bash
+OSS_ENDPOINT=https://s3.oss-cn-hangzhou.aliyuncs.com
+OSS_REGION=cn-hangzhou
+OSS_BUCKET=your-bucket
+OSS_ACCESS_KEY_ID=your-access-key
+OSS_SECRET_ACCESS_KEY=your-secret-key
+```
+
+可选环境变量：
+
+```bash
+OSS_PREFIX=link-processing/
+OSS_FORCE_PATH_STYLE=false
+OSS_MODE=mirror
+OSS_STRICT=false
+```
+
+上传路径：
 
 ```text
 <OSS_PREFIX>/文章摘要/<内容类型>/<YYYY-MM-DD-title>.md
 ```
 
-The CLI also maintains OSS indexes for reader workflows:
+索引文件：
 
 ```text
-<OSS_PREFIX>/source-index.json   # source URL deduplication
-<OSS_PREFIX>/public-index.json   # public reader article list
+<OSS_PREFIX>/source-index.json   # source URL 去重
+<OSS_PREFIX>/public-index.json   # Reader 网站文章列表
 ```
 
-If you already have Markdown articles in OSS from earlier runs, rebuild the public reader index without reprocessing source URLs:
+模式：
+
+- `OSS_MODE=mirror`：先保存到 Obsidian，再同步到 OSS。
+- `OSS_MODE=only`：只上传到 OSS，不要求配置 Obsidian vault。
+- `--no-oss`：单次运行禁用 OSS 同步。
+- `OSS_STRICT=true`：OSS 上传失败时让本次 `process` 失败。
+
+从已有 OSS Markdown 重建 Reader 索引：
 
 ```bash
 pnpm dev -- reader sync-index
 pnpm dev -- reader sync-index --json
 ```
 
-This scans `<OSS_PREFIX>/文章摘要/**/*.md`, reads each note's YAML frontmatter, and rewrites `<OSS_PREFIX>/public-index.json`.
+`public-index.json` 更新会在单个运行进程内串行化。如果多台机器或多个 CLI 进程同时发布到同一个 OSS prefix，建议串行发布，或发布后重新执行 `reader sync-index`。
 
-Minimum env vars:
+## Reader 网站
 
-- `OSS_ENDPOINT` (S3-compatible, e.g. `https://s3.oss-cn-hangzhou.aliyuncs.com`)
-- `OSS_REGION`
-- `OSS_BUCKET`
-- `OSS_ACCESS_KEY_ID`
-- `OSS_SECRET_ACCESS_KEY`
+`apps/reader/` 是一个静态 React 网站，用于展示 OSS 上的 Markdown 文章。它读取 `public-index.json`，渲染文章列表，并按 `articles[].path` 加载 Markdown 正文。
 
-Optional:
-
-- `OSS_PREFIX` - bucket path prefix
-- `OSS_FORCE_PATH_STYLE` - needed for bucket names with underscores or MinIO/R2
-- `OSS_MODE` - `mirror` by default, or `only` for OSS-only publishing
-- `OSS_STRICT` - when `true`, an upload failure fails the whole process run
-- `--no-oss` on `process` - one-shot disable
-
-OSS uploads are best-effort by default: on failure the local note is still saved and the result JSON includes `oss.uploaded=false`. Run `link-processing doctor` to verify bucket connectivity.
-
-Works with any S3-compatible service (AWS S3, MinIO, Cloudflare R2, Tencent COS, Qiniu Kodo) by pointing `OSS_ENDPOINT` at that service.
-
-`public-index.json` updates are serialized within one running process. If multiple machines or multiple CLI processes publish to the same OSS prefix at the same time, publish serially or rebuild the public index afterward.
-
-## Reader App
-
-`apps/reader/` contains a React reader for Markdown articles published to OSS. It reads `public-index.json`, renders the article list, and loads Markdown article bodies by `path`. Markdown rendering uses `react-markdown` with `remark-gfm`.
-
-Local preview:
+本地预览：
 
 ```bash
 pnpm reader:dev
 ```
 
-The dev server starts on `http://127.0.0.1:5173/` and uses the fixture files under `apps/reader/public/`.
+默认访问：
 
-Production build:
+```text
+http://127.0.0.1:5173/
+```
+
+生产构建：
 
 ```bash
 pnpm reader:build
 ```
 
-The static output is written to:
+输出目录：
 
 ```text
 dist/reader
 ```
 
-Runtime config:
+Reader 运行时配置：
 
 ```bash
 VITE_OSS_BASE_URL=https://bucket.example.com
 VITE_OSS_INDEX_PATH=notes/public-index.json
 ```
 
-If `VITE_OSS_BASE_URL` is omitted, the reader uses the current site origin. This works when `public-index.json` and article Markdown are deployed under the same domain as the reader.
+如果省略 `VITE_OSS_BASE_URL`，Reader 会使用当前站点 origin。这个模式适合把 `public-index.json` 和 Markdown 文章部署在 Reader 同域名下。
 
-OSS/CDN requirements:
+OSS/CDN 要求：
 
-- `public-index.json` must be publicly readable.
-- Markdown article objects referenced by `articles[].path` must be publicly readable.
-- CORS must allow `GET` from the reader domain.
-- Serve `public-index.json` as `application/json`.
-- Serve Markdown as `text/markdown; charset=utf-8` or a readable text content type.
-- If a CDN caches `public-index.json`, keep its TTL short or purge it after publishing new articles.
-- Configure static hosting fallback so `/articles/*` serves `index.html`; otherwise direct refreshes on article URLs can return 404.
+- `public-index.json` 可以公开读取。
+- `articles[].path` 指向的 Markdown 对象可以公开读取。
+- CORS 允许 Reader 域名发起 `GET`。
+- `public-index.json` 使用 `application/json`。
+- Markdown 使用 `text/markdown; charset=utf-8` 或其他可读文本类型。
+- CDN 对 `public-index.json` 的缓存 TTL 要短，或发布后主动 purge。
+- 静态托管需要把 `/articles/*` fallback 到 `index.html`，否则直接刷新文章页可能返回 404。
+
+## 开发
+
+常用检查：
+
+```bash
+pnpm build
+pnpm typecheck
+pnpm test
+```
+
+项目结构：
+
+```text
+src/                 CLI、核心处理流程、fetcher、LLM、storage
+src/cli/             link-processing 和 lpa 入口
+apps/reader/         React Reader 网站
+tests/               Vitest 测试
+docs/                历史设计文档和部署说明
+```
 
 ## Troubleshooting
 
-Run:
+运行诊断：
 
 ```bash
 link-processing doctor
+link-processing doctor --json
 ```
 
-Doctor checks config loading, vault writability, provider setup, API key presence, and supported link capabilities.
+`doctor` 会检查配置加载、vault 可写性、provider 设置、API key 是否存在，以及当前支持的链接能力。
 
-```mermaid
-flowchart TD
-   A["process &lt;url&gt;"] --> B["resolveProcessConfig()"]
-   B -->|ok=false| B1["输出配置错误 → exitCode=5"]
-   B -->|ok| C{"--skip-existing 且\n--update-existing 同时使用?"}
-   C -->|是| C1["输出 INVALID_OPTIONS → exitCode=2"]
-   C -->|否| D["createExtractor(llmConfig)"]
-   D -->|异常| D1["输出 LLM 错误 → exitCode=4"]
-   D -->|ok| E["processLink(url, options)"]
+常见处理方式：
 
-   E --> F["routeLink(sourceUrl)"]
-   F -->|失败| F1["返回 FailureResult"]
-   F -->|ok| G["findSourceIndexEntry(vaultPath, url)"]
-
-   G --> H{"已存在 且 policy=skip?"}
-   H -->|是| H1["返回 SkippedResult\n(SOURCE_ALREADY_EXISTS)"]
-   H -->|否| I["CompositeFetcher.fetch(routed)"]
-
-   I --> J{"非 video 且\nrawText < qualityThreshold?"}
-   J -->|是| J1["抛出 CONTENT_TOO_SHORT"]
-   J -->|否| K["DraftReviseExtractor.extract()"]
-
-   K --> L["compressIfLong(rawText)\n超长内容压缩 (Pass 0)"]
-   L --> M["DraftGenerator.generate()\nPass 1: 起草笔记"]
-   M --> N{"skipRevise?"}
-   N -->|是| N1["直接返回 draft"]
-   N -->|否| O["Reviser.revise()\nPass 2: 对照原文修订"]
-
-   O --> P["renderStandardTemplate()\n渲染 Markdown"]
-   P --> Q["saveObsidianNote()\n保存到 Obsidian vault"]
-   Q --> R["upsertSourceIndexEntry()\n更新索引"]
-   R --> S["返回 ProcessSuccessResult"]
-
-   S --> T{"--json?"}
-   T -->|是| T1["renderJson()"]
-   T -->|否| T2["renderHumanProcessResult()"]
-   T1 --> U["stdout 输出"]
-   T2 --> U
-
-   F1 --> V["toFailureResult()"]
-   J1 --> V
-   V --> W["输出错误 → exitCode=1"]
-```
+- 配置未生效：先运行 `link-processing config check --json`，确认最终解析出的路径和模型。
+- LLM 连接失败：确认 `OPENAI_BASE_URL` 是 OpenAI 兼容 `/v1` 地址，且 `OPENAI_API_KEY` 已配置。
+- 重复链接未重新处理：使用 `--update-existing`，或删除 vault 内 `.link-processing/source-index.json` 中对应条目。
+- OSS 上传失败但本地成功：默认是 best-effort；需要失败即中断时设置 `OSS_STRICT=true`。

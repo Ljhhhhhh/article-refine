@@ -13,7 +13,6 @@ import { registerDoctorCommand } from "./commands/doctor.js";
 import { registerProcessCommand } from "./commands/process.js";
 import { registerReaderCommand } from "./commands/reader.js";
 import { registerRouteCommand } from "./commands/route.js";
-import { registerServeCommand } from "./commands/serve.js";
 import { registerTuiCommand } from "./commands/tui.js";
 
 export function createProgram(): Command {
@@ -31,7 +30,6 @@ export function createProgram(): Command {
   registerConfigCommand(program);
   registerDoctorCommand(program);
   registerTuiCommand(program);
-  registerServeCommand(program);
 
   return program;
 }
