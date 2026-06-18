@@ -13,7 +13,7 @@ export function shouldUseOssOnlyMode(
 export function registerProcessCommand(program: Command): void {
   program
     .command("process")
-    .argument("<url>")
+    .argument("<source>", "URL or local .md file path")
     .option("--json", "print machine-readable JSON")
     .option("--vault <path>", "Obsidian vault path")
     .option("--llm-provider <provider>", "LLM provider (mock|draft-revise)")
@@ -27,7 +27,7 @@ export function registerProcessCommand(program: Command): void {
     .option("--no-oss", "disable OSS mirror for this run even if configured")
     .action(
       async (
-        url: string,
+        source: string,
         options: {
           json?: boolean;
           vault?: string;
@@ -58,7 +58,7 @@ export function registerProcessCommand(program: Command): void {
               process.stderr.write(`  ${labels[step] ?? step}\n`);
             };
 
-        const result = await runProcessCommand(url, { ...options, onProgress });
+        const result = await runProcessCommand(source, { ...options, onProgress });
         process.stdout.write(options.json ? renderJson(result) : renderHumanProcessResult(result));
         if (!result.ok) process.exitCode = 1;
       }

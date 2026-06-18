@@ -11,6 +11,7 @@ import { registerInspectCommand } from "./commands/inspect.js";
 import { registerConfigCommand } from "./commands/config.js";
 import { registerDoctorCommand } from "./commands/doctor.js";
 import { registerProcessCommand } from "./commands/process.js";
+import { registerReaderCommand } from "./commands/reader.js";
 import { registerRouteCommand } from "./commands/route.js";
 import { registerServeCommand } from "./commands/serve.js";
 import { registerTuiCommand } from "./commands/tui.js";
@@ -26,6 +27,7 @@ export function createProgram(): Command {
   registerRouteCommand(program);
   registerInspectCommand(program);
   registerProcessCommand(program);
+  registerReaderCommand(program);
   registerConfigCommand(program);
   registerDoctorCommand(program);
   registerTuiCommand(program);

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { mockClient } from "aws-sdk-client-mock";
-import { HeadBucketCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { HeadBucketCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { OssUploader } from "../../src/storage/oss-uploader.js";
 import { AppError } from "../../src/errors/errors.js";
 
@@ -65,5 +65,34 @@ describe("OssUploader", () => {
     const uploader = new OssUploader(baseConfig);
 
     await expect(uploader.head()).rejects.toBeInstanceOf(AppError);
+  });
+
+  test("lists object keys with pagination", async () => {
+    s3Mock
+      .on(ListObjectsV2Command, {
+        Bucket: "my-bucket",
+        Prefix: "notes/文章摘要/"
+      })
+      .resolvesOnce({
+        IsTruncated: true,
+        NextContinuationToken: "next",
+        Contents: [
+          { Key: "notes/文章摘要/综合/a.md", LastModified: new Date("2026-06-17T00:00:00.000Z") }
+        ]
+      })
+      .resolvesOnce({
+        IsTruncated: false,
+        Contents: [
+          { Key: "notes/文章摘要/综合/b.md", LastModified: new Date("2026-06-18T00:00:00.000Z") }
+        ]
+      });
+    const uploader = new OssUploader(baseConfig);
+
+    const result = await uploader.listObjects("notes/文章摘要/");
+
+    expect(result.map((object) => object.key)).toEqual([
+      "notes/文章摘要/综合/a.md",
+      "notes/文章摘要/综合/b.md"
+    ]);
   });
 });

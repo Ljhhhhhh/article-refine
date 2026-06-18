@@ -129,9 +129,11 @@ function inferModelProvider(config: LinkProcessingConfig): LinkProcessingConfig 
 export async function resolveProcessConfig(input: {
   configPath?: string;
   cli: ProcessCliOverrides;
+  requireVault?: boolean;
 }): Promise<ResolvedProcessConfig> {
   const configPath = input.configPath ?? DEFAULT_CONFIG_PATH;
   const loadedConfigFile = await fileExists(configPath);
+  const requireVault = input.requireVault ?? true;
 
   try {
     const effectiveVault =
@@ -145,7 +147,7 @@ export async function resolveProcessConfig(input: {
       (base.storage.oss.enabled && base.storage.oss.mode === "only") ||
       (process.env.OSS_MODE === "only" && !!(process.env.OSS_ENDPOINT || process.env.OSS_BUCKET));
 
-    if (!baseIsOssOnly && !base.obsidian.vaultPath && !effectiveVault) {
+    if (requireVault && !baseIsOssOnly && !base.obsidian.vaultPath && !effectiveVault) {
       throw new AppError(
         "OBSIDIAN_CONFIG_MISSING",
         `Provide --vault, LINK_PROCESSING_VAULT, or obsidian.vaultPath in ${DEFAULT_CONFIG_PATH}.`
@@ -155,7 +157,7 @@ export async function resolveProcessConfig(input: {
     const config = inferModelProvider(applyCli(applyEnv(base), input.cli));
     const isOssOnly = config.storage.oss.enabled && config.storage.oss.mode === "only";
 
-    if (!isOssOnly && !config.obsidian.vaultPath) {
+    if (requireVault && !isOssOnly && !config.obsidian.vaultPath) {
       throw new AppError(
         "OBSIDIAN_CONFIG_MISSING",
         `Provide --vault, LINK_PROCESSING_VAULT, or obsidian.vaultPath in ${DEFAULT_CONFIG_PATH}.`

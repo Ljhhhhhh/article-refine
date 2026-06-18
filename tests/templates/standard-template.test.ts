@@ -9,6 +9,7 @@ describe("renderStandardTemplate", () => {
         contentType: "技术深度",
         tags: ["#技术深度", "#AI编程", "#链接笔记"],
         knowledgeConnections: ["Agent 工程化", "Obsidian 知识库"],
+        clickbaitIndex: 5,
         body: "## 背景\n\n架构确定性与结构化 LLM 输出的分工。\n\n## 方案\n\n- CLI 稳定\n- 保存可靠"
       },
       sourceUrl: "https://example.com/article",
@@ -38,6 +39,7 @@ describe("renderStandardTemplate", () => {
         contentType: "综合",
         tags: ["#综合"],
         knowledgeConnections: [],
+        clickbaitIndex: 5,
         body: "body content"
       },
       sourceUrl: "https://example.com/x",
@@ -55,6 +57,7 @@ describe("renderStandardTemplate", () => {
         contentType: "综合",
         tags: ["#综合"],
         knowledgeConnections: [],
+        clickbaitIndex: 5,
         body: "body"
       },
       sourceUrl: "https://example.com/x",
@@ -73,6 +76,7 @@ describe("renderStandardTemplate", () => {
         contentType: "技术深度",
         tags: ["#代码"],
         knowledgeConnections: [],
+        clickbaitIndex: 5,
         body
       },
       sourceUrl: "https://example.com/x",
@@ -90,9 +94,11 @@ describe("renderStandardTemplate", () => {
     const markdown = renderStandardTemplate({
       note: {
         title: "RSC 性能优化实践",
+        summary: "文章介绍了 RSC 在性能优化中的实践方式和关键收益。",
         contentType: "技术深度",
         tags: ["#React", "#RSC", "#性能优化"],
         knowledgeConnections: ["Next.js App Router"],
+        clickbaitIndex: 5,
         body: "## 背景\n\n正文"
       },
       sourceUrl: "https://example.com/rsc",
@@ -103,6 +109,7 @@ describe("renderStandardTemplate", () => {
 
     expect(markdown.startsWith("---\n")).toBe(true);
     expect(markdown).toContain("title: RSC 性能优化实践");
+    expect(markdown).toContain("summary: 文章介绍了 RSC 在性能优化中的实践方式和关键收益。");
     expect(markdown).toContain("source_url: https://example.com/rsc");
     expect(markdown).toContain("content_type: 技术深度");
     expect(markdown).toContain("created: 2026-05-09");
@@ -118,6 +125,7 @@ describe("renderStandardTemplate", () => {
         contentType: "综合",
         tags: ["#综合"],
         knowledgeConnections: ["[[已有连接]]", "[[已有连接|别名]]"],
+        clickbaitIndex: 5,
         body: "body"
       },
       sourceUrl: "https://example.com/x",

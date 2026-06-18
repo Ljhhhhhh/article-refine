@@ -22,5 +22,7 @@ export function getExitCodeForErrorCode(code: AppErrorCode): number {
       return 7;
     case "UNKNOWN_ERROR":
       return 1;
+    default:
+      return 1;
   }
 }

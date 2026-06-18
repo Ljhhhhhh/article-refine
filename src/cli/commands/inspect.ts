@@ -7,10 +7,10 @@ import { renderJson } from "../presenters/json.js";
 export function registerInspectCommand(program: Command): void {
   program
     .command("inspect")
-    .argument("<url>")
+    .argument("<source>", "URL or local .md file path")
     .option("--json", "print machine-readable JSON")
-    .action(async (url: string) => {
-      const result = await inspectLink(url, {
+    .action(async (source: string) => {
+      const result = await inspectLink(source, {
         fetchers: [new TwitterFetcher(), new WebFetcher()],
         qualityThreshold: 300
       });

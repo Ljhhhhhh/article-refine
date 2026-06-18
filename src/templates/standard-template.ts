@@ -30,6 +30,7 @@ function renderFrontmatter(input: RenderStandardTemplateInput): string {
   const { note, sourceUrl, author, createdAt, fetchedAt } = input;
   const yaml = YAML.stringify({
     title: note.title,
+    ...(note.summary ? { summary: note.summary } : {}),
     source_url: sourceUrl,
     author: author ?? "未知",
     content_type: note.contentType,

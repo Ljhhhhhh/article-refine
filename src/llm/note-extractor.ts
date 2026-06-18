@@ -30,6 +30,7 @@ export class MockNoteExtractor implements NoteExtractor {
 
     return processedNoteSchema.parse({
       title: input.title ?? "未命名链接笔记",
+      summary: "这篇文章介绍了可保存为结构化链接笔记的核心信息，并适合纳入知识库继续阅读。",
       contentType: "综合",
       tags: ["#链接笔记", "#综合"],
       knowledgeConnections: ["链接笔记", input.linkType],

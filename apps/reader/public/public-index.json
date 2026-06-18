@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "generatedAt": "2026-06-17T00:00:00.000Z",
+  "articles": [
+    {
+      "slug": "2026-06-17-agent-engineering",
+      "title": "Agent 工程文章",
+      "path": "articles/2026-06-17-agent-engineering.md",
+      "contentType": "综合",
+      "created": "2026-06-17",
+      "updatedAt": "2026-06-17T00:00:00.000Z",
+      "tags": ["链接笔记", "综合"],
+      "author": "Author",
+      "sourceUrl": "https://example.dev/agent",
+      "summary": "文章介绍了 Link Processing Reader 的本地预览流程，以及如何从公开索引加载 Markdown 正文。",
+      "excerpt": "文章介绍了 Link Processing Reader 的本地预览流程，以及如何从公开索引加载 Markdown 正文。",
+      "readingTime": 2,
+      "sourceHost": "example.dev"
+    },
+    {
+      "slug": "2026-06-16-react-reader-search",
+      "title": "React 阅读器搜索设计",
+      "path": "articles/2026-06-16-react-reader-search.md",
+      "contentType": "技术深度",
+      "created": "2026-06-16",
+      "updatedAt": "2026-06-16T08:00:00.000Z",
+      "tags": ["React", "搜索", "阅读器"],
+      "author": "Reader Team",
+      "sourceUrl": "https://reader.example.com/search",
+      "summary": "文章说明如何用公开索引字段实现快速搜索，并避免在列表页批量拉取 Markdown 正文。",
+      "excerpt": "文章说明如何用公开索引字段实现快速搜索，并避免在列表页批量拉取 Markdown 正文。",
+      "readingTime": 3,
+      "sourceHost": "reader.example.com"
+    },
+    {
+      "slug": "2026-06-15-knowledge-card",
+      "title": "知识卡片的信息密度",
+      "path": "articles/2026-06-15-knowledge-card.md",
+      "contentType": "观点思考",
+      "created": "2026-06-15",
+      "updatedAt": "2026-06-15T08:00:00.000Z",
+      "tags": ["知识管理", "卡片"],
+      "author": "PM",
+      "sourceUrl": "https://notes.example.org/card",
+      "readingTime": 1,
+      "sourceHost": "notes.example.org"
+    }
+  ]
+}

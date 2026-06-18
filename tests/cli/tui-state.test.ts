@@ -47,6 +47,7 @@ describe("TUI state", () => {
         linkType: "general",
         contentType: "综合",
         title: "Example",
+        clickbaitIndex: 5,
         oss: {
           uploaded: true,
           bucket: "notes",

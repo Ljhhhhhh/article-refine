@@ -1,6 +1,7 @@
 import {
   GetObjectCommand,
   HeadBucketCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client
 } from "@aws-sdk/client-s3";
@@ -22,6 +23,11 @@ export type OssUploadResult = {
   url: string;
   httpsUrl: string;
   etag?: string;
+};
+
+export type OssObjectInfo = {
+  key: string;
+  lastModified?: Date;
 };
 
 function buildHttpsUrl(config: OssUploaderConfig, key: string): string {
@@ -106,6 +112,37 @@ export class OssUploader {
       throw new AppError(
         "OSS_UPLOAD_FAILED",
         error instanceof Error ? error.message : "OSS get failed."
+      );
+    }
+  }
+
+  async listObjects(prefix: string): Promise<OssObjectInfo[]> {
+    const objects: OssObjectInfo[] = [];
+    let continuationToken: string | undefined;
+
+    try {
+      do {
+        const response = await this.client.send(
+          new ListObjectsV2Command({
+            Bucket: this.config.bucket,
+            Prefix: prefix,
+            ContinuationToken: continuationToken
+          })
+        );
+
+        for (const object of response.Contents ?? []) {
+          if (object.Key) {
+            objects.push({ key: object.Key, lastModified: object.LastModified });
+          }
+        }
+        continuationToken = response.IsTruncated ? response.NextContinuationToken : undefined;
+      } while (continuationToken);
+
+      return objects;
+    } catch (error) {
+      throw new AppError(
+        "OSS_UPLOAD_FAILED",
+        error instanceof Error ? error.message : "OSS list failed."
       );
     }
   }

@@ -5,6 +5,7 @@ const ERROR_CODE_LABELS: Record<string, string> = {
   INVALID_OPTIONS: "参数错误",
   UNSUPPORTED_URL: "不支持的链接类型",
   FETCH_FAILED: "内容抓取失败",
+  FILE_NOT_FOUND: "文件未找到",
   CONTENT_TOO_SHORT: "抓取内容过短",
   LLM_OUTPUT_INVALID: "笔记生成失败",
   OBSIDIAN_CONFIG_MISSING: "Obsidian 配置缺失",

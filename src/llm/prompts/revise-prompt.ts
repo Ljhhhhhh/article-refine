@@ -1,3 +1,5 @@
+import { renderCategoryGuide } from "../categories.js";
+
 export const REVISE_PROMPT = `/no_think
 <role>
 你是一位严格的审稿人。你的任务是对照原文审查一份笔记草稿，找出问题并产出修订版。
@@ -24,13 +26,17 @@ export const REVISE_PROMPT = `/no_think
 [5] 标题准确性：title 是否准确反映原文核心？
     - 过于泛化或偏题 → 重写。
 
-[6] 标签与关联：tags 是否都是具体词（非 #综合 #思考 这类空标签）？
+[6] 摘要准确性：summary 是否用 1-2 句话忠实概括原文核心内容？
+    - 若引入原文没有的评价、推断或遗漏核心信息，修复之。
+    - 控制在 40-100 个中文字符，便于文章列表卡片展示。
+
+[7] 标签与关联：tags 是否都来自分类表，且与原文主题匹配？
     - knowledgeConnections 是否基于原文真实涉及的技术 / 概念？
 
-[7] 遗漏检测：原文中重要但草稿中缺失的核心内容。
+[8] 遗漏检测：原文中重要但草稿中缺失的核心内容。
     - 补入 body 合适位置。
 
-[8] 标题党指数：clickbaitIndex 的评分是否合理？
+[9] 标题党指数：clickbaitIndex 的评分是否合理？
     - 对比原文标题与正文实际内容，评分是否恰当？
     - 标题夸大但内容充实 → 适当调高；标题朴实内容对应 → 保持低分。
 </review_checklist>
@@ -40,14 +46,20 @@ export const REVISE_PROMPT = `/no_think
 - 原文没明说的内容不要补，宁可空缺也不要编造。
 - 保留草稿已经做对的部分，不要无谓重写。
 - body 不要使用一级标题（# title 由模板负责）。
+- tags 从下方分类表的可选 tags 中选择 1-4 个，以 # 开头；不要创造新标签。
 - 输出完整的修订版 JSON，格式与草稿相同。
 </revision_rules>
+
+<category_table>
+${renderCategoryGuide()}
+</category_table>
 
 <output>
 严格输出一个 JSON 对象，无前言、无 markdown 代码块、无解释文字。
 body 字段内的换行使用 \\n 转义。
 {
   "title": "string",
+  "summary": "string",
   "contentType": "技术深度" | "观点思考" | "教程学习" | "资讯动态" | "综合",
   "tags": ["#..."],
   "knowledgeConnections": ["..."],

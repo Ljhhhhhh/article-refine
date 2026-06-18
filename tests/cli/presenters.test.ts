@@ -10,6 +10,7 @@ describe("renderHumanProcessResult", () => {
       linkType: "tech_blog",
       contentType: "技术深度",
       title: "Agent 工程文章",
+      clickbaitIndex: 5,
       obsidian: {
         saved: true,
         path: "/vault/文章摘要/技术深度/2026-05-07-Agent 工程文章.md",

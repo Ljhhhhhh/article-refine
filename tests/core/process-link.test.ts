@@ -112,11 +112,16 @@ describe("processLink", () => {
   });
 });
 
-function makeUploader(behavior: "ok" | "fail"): OssUploader {
-  return {
-    upload: async ({ key }: { key: string }): Promise<OssUploadResult> => {
-      if (behavior === "fail") {
+function makeUploader(behavior: "ok" | "fail" | "index-fail"): OssUploader & { _index: Record<string, string> } {
+  const index: Record<string, string> = {};
+  const uploader: any = {
+    _index: index,
+    upload: async ({ key, body, contentType }: { key: string; body?: string; contentType?: string }): Promise<OssUploadResult> => {
+      if (behavior === "fail" || (behavior === "index-fail" && contentType === "application/json")) {
         throw new AppError("OSS_UPLOAD_FAILED", "boom");
+      }
+      if (contentType === "application/json") {
+        index[key] = body ?? "";
       }
       return {
         bucket: "bucket",
@@ -127,12 +132,14 @@ function makeUploader(behavior: "ok" | "fail"): OssUploader {
       };
     },
     head: async () => {},
-    getObject: async () => undefined
-  } as unknown as OssUploader;
+    getObject: async (key: string) => index[key]
+  };
+  return uploader as OssUploader & { _index: Record<string, string> };
 }
 
 describe("processLink OSS mirror", () => {
   test("attaches uploaded oss result on success", async () => {
+    const uploader = makeUploader("ok");
     const result = await processLink("https://example.dev/agent", {
       vaultPath,
       fetchers: [fakeFetcher],
@@ -140,7 +147,7 @@ describe("processLink OSS mirror", () => {
       qualityThreshold: 300,
       now: () => new Date("2026-05-07T10:00:00.000Z"),
       oss: {
-        uploader: makeUploader("ok"),
+        uploader,
         prefix: "notes",
         strict: false
       }
@@ -153,10 +160,24 @@ describe("processLink OSS mirror", () => {
         bucket: "bucket",
         url: expect.stringContaining("oss://bucket/notes/文章摘要")
       });
+      const publicIndex = JSON.parse(uploader._index["notes/public-index.json"]);
+      expect(publicIndex.articles[0]).toMatchObject({
+        slug: "2026-05-07-Agent 工程文章",
+        title: "Agent 工程文章",
+        path: expect.stringContaining("notes/文章摘要/综合/2026-05-07-Agent 工程文章.md"),
+        tags: ["链接笔记", "综合"],
+        author: "Author",
+        sourceUrl: "https://example.dev/agent",
+        summary: "这篇文章介绍了可保存为结构化链接笔记的核心信息，并适合纳入知识库继续阅读。",
+        excerpt: "这篇文章介绍了可保存为结构化链接笔记的核心信息，并适合纳入知识库继续阅读。",
+        readingTime: 1,
+        sourceHost: "example.dev"
+      });
     }
   });
 
   test("degrades to warning when oss upload fails and strict is false", async () => {
+    const uploader = makeUploader("fail");
     const result = await processLink("https://example.dev/agent", {
       vaultPath,
       fetchers: [fakeFetcher],
@@ -164,7 +185,7 @@ describe("processLink OSS mirror", () => {
       qualityThreshold: 300,
       now: () => new Date("2026-05-07T10:00:00.000Z"),
       oss: {
-        uploader: makeUploader("fail"),
+        uploader,
         prefix: "",
         strict: false
       }
@@ -176,6 +197,7 @@ describe("processLink OSS mirror", () => {
         uploaded: false,
         error: { code: "OSS_UPLOAD_FAILED" }
       });
+      expect(uploader._index["public-index.json"]).toBeUndefined();
       await expect(readFile(result.obsidian.path, "utf8")).resolves.toContain("# Agent 工程文章");
     }
   });
@@ -189,6 +211,51 @@ describe("processLink OSS mirror", () => {
       now: () => new Date("2026-05-07T10:00:00.000Z"),
       oss: {
         uploader: makeUploader("fail"),
+        prefix: "",
+        strict: true
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.code).toBe("OSS_UPLOAD_FAILED");
+    }
+  });
+
+  test("keeps mirror success when public index update fails and strict is false", async () => {
+    const uploader = makeUploader("index-fail");
+    const result = await processLink("https://example.dev/agent", {
+      vaultPath,
+      fetchers: [fakeFetcher],
+      extractor: new MockNoteExtractor(),
+      qualityThreshold: 300,
+      now: () => new Date("2026-05-07T10:00:00.000Z"),
+      oss: {
+        uploader,
+        prefix: "",
+        strict: false
+      }
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok && "obsidian" in result && result.obsidian) {
+      expect(result.oss).toMatchObject({ uploaded: true });
+      await expect(readFile(result.obsidian.path, "utf8")).resolves.toContain("# Agent 工程文章");
+      await expect(
+        readFile(path.join(vaultPath, ".link-processing", "source-index.json"), "utf8")
+      ).resolves.toContain("Agent 工程文章");
+    }
+  });
+
+  test("fails mirror when public index update fails and strict is true", async () => {
+    const result = await processLink("https://example.dev/agent", {
+      vaultPath,
+      fetchers: [fakeFetcher],
+      extractor: new MockNoteExtractor(),
+      qualityThreshold: 300,
+      now: () => new Date("2026-05-07T10:00:00.000Z"),
+      oss: {
+        uploader: makeUploader("index-fail"),
         prefix: "",
         strict: true
       }
@@ -249,6 +316,20 @@ describe("processLink OSS-only", () => {
         uploaded: true,
         bucket: "bucket",
         url: expect.stringContaining("oss://bucket/notes/文章摘要")
+      });
+      expect(uploader._index["notes/source-index.json"]).toBeDefined();
+      const publicIndex = JSON.parse(uploader._index["notes/public-index.json"]);
+      expect(publicIndex.articles[0]).toMatchObject({
+        slug: "2026-05-07-Agent 工程文章",
+        title: "Agent 工程文章",
+        path: expect.stringContaining("notes/文章摘要/综合/2026-05-07-Agent 工程文章.md"),
+        tags: ["链接笔记", "综合"],
+        author: "Author",
+        sourceUrl: "https://example.dev/agent",
+        summary: "这篇文章介绍了可保存为结构化链接笔记的核心信息，并适合纳入知识库继续阅读。",
+        excerpt: "这篇文章介绍了可保存为结构化链接笔记的核心信息，并适合纳入知识库继续阅读。",
+        readingTime: 1,
+        sourceHost: "example.dev"
       });
     }
   });
@@ -316,6 +397,7 @@ describe("processLink OSS-only", () => {
         uploaded: false,
         error: { code: "OSS_UPLOAD_FAILED" }
       });
+      expect(uploader._index["public-index.json"]).toBeUndefined();
     }
   });
 });

@@ -176,7 +176,29 @@ link-processing process <url> --update-existing
 
 ## OSS / S3-compatible Mirror
 
-When OSS credentials are present in the environment, each processed note is mirrored to the configured bucket after the local save. Local files remain the source of truth; the source index is local-only.
+When OSS credentials are present in the environment, each processed note is mirrored to the configured bucket after the local save. In `OSS_MODE=only`, the note is uploaded to OSS without requiring an Obsidian vault.
+
+Uploaded notes use this key layout:
+
+```text
+<OSS_PREFIX>/文章摘要/<内容类型>/<YYYY-MM-DD-title>.md
+```
+
+The CLI also maintains OSS indexes for reader workflows:
+
+```text
+<OSS_PREFIX>/source-index.json   # source URL deduplication
+<OSS_PREFIX>/public-index.json   # public reader article list
+```
+
+If you already have Markdown articles in OSS from earlier runs, rebuild the public reader index without reprocessing source URLs:
+
+```bash
+pnpm dev -- reader sync-index
+pnpm dev -- reader sync-index --json
+```
+
+This scans `<OSS_PREFIX>/文章摘要/**/*.md`, reads each note's YAML frontmatter, and rewrites `<OSS_PREFIX>/public-index.json`.
 
 Minimum env vars:
 
@@ -190,12 +212,58 @@ Optional:
 
 - `OSS_PREFIX` - bucket path prefix
 - `OSS_FORCE_PATH_STYLE` - needed for bucket names with underscores or MinIO/R2
+- `OSS_MODE` - `mirror` by default, or `only` for OSS-only publishing
 - `OSS_STRICT` - when `true`, an upload failure fails the whole process run
 - `--no-oss` on `process` - one-shot disable
 
 OSS uploads are best-effort by default: on failure the local note is still saved and the result JSON includes `oss.uploaded=false`. Run `link-processing doctor` to verify bucket connectivity.
 
 Works with any S3-compatible service (AWS S3, MinIO, Cloudflare R2, Tencent COS, Qiniu Kodo) by pointing `OSS_ENDPOINT` at that service.
+
+`public-index.json` updates are serialized within one running process. If multiple machines or multiple CLI processes publish to the same OSS prefix at the same time, publish serially or rebuild the public index afterward.
+
+## Reader App
+
+`apps/reader/` contains a React reader for Markdown articles published to OSS. It reads `public-index.json`, renders the article list, and loads Markdown article bodies by `path`. Markdown rendering uses `react-markdown` with `remark-gfm`.
+
+Local preview:
+
+```bash
+pnpm reader:dev
+```
+
+The dev server starts on `http://127.0.0.1:5173/` and uses the fixture files under `apps/reader/public/`.
+
+Production build:
+
+```bash
+pnpm reader:build
+```
+
+The static output is written to:
+
+```text
+dist/reader
+```
+
+Runtime config:
+
+```bash
+VITE_OSS_BASE_URL=https://bucket.example.com
+VITE_OSS_INDEX_PATH=notes/public-index.json
+```
+
+If `VITE_OSS_BASE_URL` is omitted, the reader uses the current site origin. This works when `public-index.json` and article Markdown are deployed under the same domain as the reader.
+
+OSS/CDN requirements:
+
+- `public-index.json` must be publicly readable.
+- Markdown article objects referenced by `articles[].path` must be publicly readable.
+- CORS must allow `GET` from the reader domain.
+- Serve `public-index.json` as `application/json`.
+- Serve Markdown as `text/markdown; charset=utf-8` or a readable text content type.
+- If a CDN caches `public-index.json`, keep its TTL short or purge it after publishing new articles.
+- Configure static hosting fallback so `/articles/*` serves `index.html`; otherwise direct refreshes on article URLs can return 404.
 
 ## Troubleshooting
 
