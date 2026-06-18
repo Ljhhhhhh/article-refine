@@ -1,4 +1,4 @@
-# LinkProcessingAgent
+# 观（Guan）
 
 CLI-first link processing for Obsidian. Give it a URL, and it fetches the content, creates a high-fidelity Markdown note, and saves it into your vault.
 

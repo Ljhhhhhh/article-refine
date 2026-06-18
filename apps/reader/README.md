@@ -1,4 +1,4 @@
-# Link Processing Reader
+# 观（Guan）Reader
 
 React reader for Markdown articles published by `lpa` to OSS.
 

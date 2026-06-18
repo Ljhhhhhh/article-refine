@@ -54,7 +54,7 @@ type PublicArticleEntry = {
 
 这是一个 [外部链接](https://example.dev/agent)，会在新窗口打开。
 
-![示例图片](https://placehold.co/960x360/png?text=Link+Processing+Reader)
+![示例图片](https://placehold.co/960x360/png?text=Guan+Reader)
 
 ---
 

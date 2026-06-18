@@ -1,6 +1,6 @@
-# LinkProcessingAgent — Chrome Extension
+# 观（Guan）Chrome Extension
 
-Save the current tab into your Obsidian vault with one click, a context menu, or a keyboard shortcut. The extension is a thin client for a local HTTP server shipped inside `link-processing-agent`.
+Save the current tab into your Obsidian vault with one click, a context menu, or a keyboard shortcut. The extension is a thin client for the local Guan HTTP server.
 
 ## Prerequisites
 

@@ -57,7 +57,7 @@ async function handle(
   const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "127.0.0.1"}`);
 
   if (req.method === "GET" && url.pathname === "/v1/healthz") {
-    return writeJson(res, 200, { ok: true, name: "link-processing", version: "0.1.0" });
+    return writeJson(res, 200, { ok: true, name: "guan", version: "0.1.0" });
   }
 
   const auth = checkAuth(req, { token: opts.token });

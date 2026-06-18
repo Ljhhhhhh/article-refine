@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { isValidElement, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import YAML from "yaml";
+import brandIcon from "./notebook-text.svg";
 import "./styles.css";
 
 type ContentType = "技术深度" | "观点思考" | "教程学习" | "资讯动态" | "综合";
@@ -56,11 +57,15 @@ const contentTypes: Array<ContentType | "全部文章"> = [
   "观点思考",
   "教程学习",
   "资讯动态",
-  "综合"
+  "综合",
 ];
 
-const ossBaseUrl = trimTrailingSlash(import.meta.env.VITE_OSS_BASE_URL ?? window.location.origin);
-const indexPath = trimLeadingSlash(import.meta.env.VITE_OSS_INDEX_PATH ?? "public-index.json");
+const ossBaseUrl = trimTrailingSlash(
+  import.meta.env.VITE_OSS_BASE_URL ?? window.location.origin,
+);
+const indexPath = trimLeadingSlash(
+  import.meta.env.VITE_OSS_INDEX_PATH ?? "public-index.json",
+);
 
 function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/g, "");
@@ -83,7 +88,9 @@ function safeUrl(value: string | undefined): string | undefined {
 
   try {
     const parsed = new URL(trimmed);
-    return ["http:", "https:", "mailto:"].includes(parsed.protocol) ? trimmed : undefined;
+    return ["http:", "https:", "mailto:"].includes(parsed.protocol)
+      ? trimmed
+      : undefined;
   } catch {
     return undefined;
   }
@@ -131,10 +138,11 @@ function parseMarkdownDocument(markdown: string): MarkdownDocument {
   try {
     const parsed = YAML.parse(rawFrontmatter);
     return {
-      frontmatter: parsed && typeof parsed === "object" && !Array.isArray(parsed)
-        ? parsed as Record<string, unknown>
-        : {},
-      body
+      frontmatter:
+        parsed && typeof parsed === "object" && !Array.isArray(parsed)
+          ? (parsed as Record<string, unknown>)
+          : {},
+      body,
     };
   } catch {
     return { frontmatter: {}, body };
@@ -147,7 +155,10 @@ function stringValue(value: unknown): string | undefined {
 
 function stringArrayValue(value: unknown): string[] {
   return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    ? value.filter(
+        (item): item is string =>
+          typeof item === "string" && item.trim().length > 0,
+      )
     : [];
 }
 
@@ -165,17 +176,21 @@ function matchesSearch(article: PublicArticleEntry, query: string): boolean {
     article.author ?? "",
     article.sourceUrl,
     articleSourceHost(article),
-    ...article.tags
+    ...article.tags,
   ];
   return fields.some((field) => normalizeSearch(field).includes(query));
 }
 
 function uniqueTags(articles: PublicArticleEntry[]): string[] {
-  return Array.from(new Set(articles.flatMap((article) => article.tags))).sort((a, b) => a.localeCompare(b));
+  return Array.from(new Set(articles.flatMap((article) => article.tags))).sort(
+    (a, b) => a.localeCompare(b),
+  );
 }
 
 function uniqueSources(articles: PublicArticleEntry[]): string[] {
-  return Array.from(new Set(articles.map(articleSourceHost).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+  return Array.from(
+    new Set(articles.map(articleSourceHost).filter(Boolean)),
+  ).sort((a, b) => a.localeCompare(b));
 }
 
 function articleSummary(article: PublicArticleEntry): string | undefined {
@@ -187,8 +202,10 @@ function articleMeta(article: PublicArticleEntry): string {
     articleSourceHost(article),
     article.contentType,
     formatDate(article.updatedAt || article.created),
-    article.readingTime ? `${article.readingTime} 分钟` : undefined
-  ].filter(Boolean).join(" · ");
+    article.readingTime ? `${article.readingTime} 分钟` : undefined,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 function stripMarkdownInline(value: string): string {
@@ -219,7 +236,7 @@ function extractHeadings(markdown: string): Heading[] {
     headings.push({
       id: headingId(title, headings.length + 1),
       depth: match[1]?.length === 3 ? 3 : 2,
-      title
+      title,
     });
   }
 
@@ -235,7 +252,56 @@ function markdownNodeText(value: unknown): string {
   return "";
 }
 
-function visitMarkdownTree(value: unknown, visitor: (node: Record<string, unknown>) => void): void {
+function reactNodeText(value: ReactNode): string {
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(reactNodeText).join("");
+  }
+  if (isValidElement<{ children?: ReactNode }>(value)) {
+    return reactNodeText(value.props.children);
+  }
+  return "";
+}
+
+function metadataTags(value: ReactNode): string[] {
+  const text = reactNodeText(value).trim();
+  if (!text.startsWith("标签：")) return [];
+
+  return text
+    .slice("标签：".length)
+    .trim()
+    .split(/\s+/)
+    .map((tag) => tag.trim().replace(/^#/, ""))
+    .filter(Boolean);
+}
+
+function isMetadataQuoteLine(value: string): boolean {
+  return /^>\s*(创建日期|来源|作者|抓取时间|标签|标题党指数)：/.test(value);
+}
+
+function normalizeMetadataBlockquotes(markdown: string): string {
+  const lines = markdown.split("\n");
+  const normalized: string[] = [];
+
+  lines.forEach((line, index) => {
+    normalized.push(line);
+    if (
+      isMetadataQuoteLine(line) &&
+      isMetadataQuoteLine(lines[index + 1] ?? "")
+    ) {
+      normalized.push(">");
+    }
+  });
+
+  return normalized.join("\n");
+}
+
+function visitMarkdownTree(
+  value: unknown,
+  visitor: (node: Record<string, unknown>) => void,
+): void {
   if (!value || typeof value !== "object") return;
   const node = value as Record<string, unknown>;
   visitor(node);
@@ -248,18 +314,22 @@ function remarkHeadingIds() {
   return (tree: unknown) => {
     let ordinal = 0;
     visitMarkdownTree(tree, (node) => {
-      if (node.type !== "heading" || (node.depth !== 2 && node.depth !== 3)) return;
+      if (node.type !== "heading" || (node.depth !== 2 && node.depth !== 3))
+        return;
       ordinal += 1;
       const title = stripMarkdownInline(markdownNodeText(node));
-      const data = node.data && typeof node.data === "object"
-        ? node.data as Record<string, unknown>
-        : {};
+      const data =
+        node.data && typeof node.data === "object"
+          ? (node.data as Record<string, unknown>)
+          : {};
       node.data = {
         ...data,
         hProperties: {
-          ...(data.hProperties && typeof data.hProperties === "object" ? data.hProperties : {}),
-          id: headingId(title, ordinal)
-        }
+          ...(data.hProperties && typeof data.hProperties === "object"
+            ? data.hProperties
+            : {}),
+          id: headingId(title, ordinal),
+        },
       };
     });
   };
@@ -267,7 +337,9 @@ function remarkHeadingIds() {
 
 function App() {
   const [route, setRoute] = useState<Route>(() => currentRoute());
-  const [indexState, setIndexState] = useState<LoadState<PublicArticleIndex>>({ status: "loading" });
+  const [indexState, setIndexState] = useState<LoadState<PublicArticleIndex>>({
+    status: "loading",
+  });
 
   useEffect(() => {
     const onPopState = () => setRoute(currentRoute());
@@ -278,29 +350,52 @@ function App() {
   useEffect(() => {
     fetch(joinUrl(ossBaseUrl, indexPath))
       .then((response) => {
-        if (!response.ok) throw new Error(`Index request failed: ${response.status}`);
+        if (!response.ok)
+          throw new Error(`Index request failed: ${response.status}`);
         return response.json() as Promise<PublicArticleIndex>;
       })
       .then((index) => setIndexState({ status: "loaded", data: index }))
       .catch((error) => {
         setIndexState({
           status: "failed",
-          message: error instanceof Error ? error.message : "Failed to load article index."
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to load article index.",
         });
       });
   }, []);
 
   if (indexState.status === "loading") {
-    return <Shell><StatusMessage title="正在加载文章" /></Shell>;
+    return (
+      <Shell>
+        <StatusMessage title="正在加载文章" />
+      </Shell>
+    );
   }
   if (indexState.status === "failed") {
-    return <Shell><StatusMessage title="无法加载文章索引" detail={indexState.message} /></Shell>;
+    return (
+      <Shell>
+        <StatusMessage title="无法加载文章索引" detail={indexState.message} />
+      </Shell>
+    );
   }
   if (route.name === "not-found") {
-    return <Shell><StatusMessage title="未找到页面" detail="请返回文章工作台重新选择内容。" /></Shell>;
+    return (
+      <Shell>
+        <StatusMessage
+          title="未找到页面"
+          detail="请返回文章工作台重新选择内容。"
+        />
+      </Shell>
+    );
   }
 
-  return <Shell><ReaderWorkspace articles={indexState.data.articles} route={route} /></Shell>;
+  return (
+    <Shell>
+      <ReaderWorkspace articles={indexState.data.articles} route={route} />
+    </Shell>
+  );
 }
 
 function Shell({ children }: { children: ReactNode }) {
@@ -308,18 +403,30 @@ function Shell({ children }: { children: ReactNode }) {
     <div className="app-shell">
       <header className="topbar">
         <button className="brand" type="button" onClick={() => navigate("/")}>
-          <span className="brand-mark">L</span>
-          <span>LPA Reader</span>
+          <img
+            className="brand-mark"
+            src={brandIcon}
+            alt=""
+            aria-hidden="true"
+          />
+          <span>观（Guan）</span>
         </button>
-        <span className="topbar-meta">Markdown knowledge library</span>
       </header>
       <main>{children}</main>
     </div>
   );
 }
 
-function ReaderWorkspace({ articles, route }: { articles: PublicArticleEntry[]; route: Route }) {
-  const [selectedType, setSelectedType] = useState<ContentType | "全部文章">("全部文章");
+function ReaderWorkspace({
+  articles,
+  route,
+}: {
+  articles: PublicArticleEntry[];
+  route: Route;
+}) {
+  const [selectedType, setSelectedType] = useState<ContentType | "全部文章">(
+    "全部文章",
+  );
   const [selectedTag, setSelectedTag] = useState<string | undefined>();
   const [selectedSource, setSelectedSource] = useState<string | undefined>();
   const [search, setSearch] = useState("");
@@ -328,28 +435,49 @@ function ReaderWorkspace({ articles, route }: { articles: PublicArticleEntry[]; 
   const tags = useMemo(() => uniqueTags(articles), [articles]);
   const sources = useMemo(() => uniqueSources(articles), [articles]);
   const query = normalizeSearch(search);
-  const filteredArticles = useMemo(() => articles.filter((article) => {
-    const typeMatches = selectedType === "全部文章" || article.contentType === selectedType;
-    const tagMatches = !selectedTag || article.tags.includes(selectedTag);
-    const sourceMatches = !selectedSource || articleSourceHost(article) === selectedSource;
-    return typeMatches && tagMatches && sourceMatches && matchesSearch(article, query);
-  }), [articles, query, selectedSource, selectedTag, selectedType]);
+  const filteredArticles = useMemo(
+    () =>
+      articles.filter((article) => {
+        const typeMatches =
+          selectedType === "全部文章" || article.contentType === selectedType;
+        const tagMatches = !selectedTag || article.tags.includes(selectedTag);
+        const sourceMatches =
+          !selectedSource || articleSourceHost(article) === selectedSource;
+        return (
+          typeMatches &&
+          tagMatches &&
+          sourceMatches &&
+          matchesSearch(article, query)
+        );
+      }),
+    [articles, query, selectedSource, selectedTag, selectedType],
+  );
 
-  const routedArticle = route.name === "article"
-    ? articles.find((article) => article.slug === route.slug)
-    : undefined;
+  const routedArticle =
+    route.name === "article"
+      ? articles.find((article) => article.slug === route.slug)
+      : undefined;
   const selectedArticle = routedArticle ?? filteredArticles[0];
 
   if (articles.length === 0) {
     return (
       <div className="workspace workspace-empty">
-        <StatusMessage title="暂无文章" detail="public-index.json 中还没有可展示的文章。" />
+        <StatusMessage
+          title="暂无文章"
+          detail="public-index.json 中还没有可展示的文章。"
+        />
       </div>
     );
   }
 
   return (
-    <div className={route.name === "article" ? "workspace route-article" : "workspace route-home"}>
+    <div
+      className={
+        route.name === "article"
+          ? "workspace route-article"
+          : "workspace route-home"
+      }
+    >
       <ReaderSidebar
         articles={articles}
         search={search}
@@ -376,7 +504,10 @@ function ReaderWorkspace({ articles, route }: { articles: PublicArticleEntry[]; 
         onOpenFilters={() => setIsFilterOpen(true)}
         onSearchChange={setSearch}
       />
-      <ArticleInbox articles={filteredArticles} selectedSlug={selectedArticle?.slug} />
+      <ArticleInbox
+        articles={filteredArticles}
+        selectedSlug={selectedArticle?.slug}
+      />
       <ArticlePane article={selectedArticle} route={route} />
       <MobileFilterSheet
         articles={articles}
@@ -411,7 +542,7 @@ function MobileListTools({
   selectedTag,
   selectedType,
   onOpenFilters,
-  onSearchChange
+  onSearchChange,
 }: {
   articles: PublicArticleEntry[];
   filteredCount: number;
@@ -425,7 +556,7 @@ function MobileListTools({
   const activeFilters = [
     selectedType !== "全部文章" ? selectedType : undefined,
     selectedTag,
-    selectedSource
+    selectedSource,
   ].filter(Boolean);
 
   return (
@@ -433,9 +564,15 @@ function MobileListTools({
       <div className="mobile-list-bar">
         <div>
           <h1>全部文章</h1>
-          <p>{filteredCount} / {articles.length} 篇</p>
+          <p>
+            {filteredCount} / {articles.length} 篇
+          </p>
         </div>
-        <button className="mobile-tool-button" type="button" onClick={onOpenFilters}>
+        <button
+          className="mobile-tool-button"
+          type="button"
+          onClick={onOpenFilters}
+        >
           筛选
         </button>
       </div>
@@ -450,7 +587,11 @@ function MobileListTools({
       </label>
       {activeFilters.length > 0 ? (
         <div className="active-filter-row">
-          {activeFilters.map((filter) => <span className="active-filter" key={filter}>{filter}</span>)}
+          {activeFilters.map((filter) => (
+            <span className="active-filter" key={filter}>
+              {filter}
+            </span>
+          ))}
         </div>
       ) : null}
     </section>
@@ -469,7 +610,7 @@ function MobileFilterSheet({
   onClear,
   onSelectSource,
   onSelectTag,
-  onSelectType
+  onSelectType,
 }: {
   articles: PublicArticleEntry[];
   isOpen: boolean;
@@ -488,23 +629,36 @@ function MobileFilterSheet({
 
   return (
     <div className="mobile-sheet-layer" role="presentation">
-      <button className="mobile-sheet-backdrop" type="button" aria-label="关闭筛选" onClick={onClose} />
+      <button
+        className="mobile-sheet-backdrop"
+        type="button"
+        aria-label="关闭筛选"
+        onClick={onClose}
+      />
       <section className="mobile-sheet" aria-label="筛选">
         <header className="mobile-sheet-header">
           <h2>筛选</h2>
-          <button type="button" onClick={onClose}>完成</button>
+          <button type="button" onClick={onClose}>
+            完成
+          </button>
         </header>
         <div className="mobile-sheet-content">
           <section className="mobile-sheet-section" aria-label="分类">
             <h3>分类</h3>
             <div className="mobile-choice-grid">
               {contentTypes.map((type) => {
-                const count = type === "全部文章"
-                  ? articles.length
-                  : articles.filter((article) => article.contentType === type).length;
+                const count =
+                  type === "全部文章"
+                    ? articles.length
+                    : articles.filter((article) => article.contentType === type)
+                        .length;
                 return (
                   <button
-                    className={type === selectedType ? "mobile-choice active" : "mobile-choice"}
+                    className={
+                      type === selectedType
+                        ? "mobile-choice active"
+                        : "mobile-choice"
+                    }
                     key={type}
                     type="button"
                     onClick={() => onSelectType(type)}
@@ -528,7 +682,9 @@ function MobileFilterSheet({
               </button>
               {tags.map((tag) => (
                 <button
-                  className={tag === selectedTag ? "mobile-chip active" : "mobile-chip"}
+                  className={
+                    tag === selectedTag ? "mobile-chip active" : "mobile-chip"
+                  }
                   key={tag}
                   type="button"
                   onClick={() => onSelectTag(tag)}
@@ -543,7 +699,9 @@ function MobileFilterSheet({
               <h3>来源</h3>
               <div className="mobile-chip-row">
                 <button
-                  className={!selectedSource ? "mobile-chip active" : "mobile-chip"}
+                  className={
+                    !selectedSource ? "mobile-chip active" : "mobile-chip"
+                  }
                   type="button"
                   onClick={() => onSelectSource(undefined)}
                 >
@@ -551,7 +709,11 @@ function MobileFilterSheet({
                 </button>
                 {sources.slice(0, 12).map((source) => (
                   <button
-                    className={source === selectedSource ? "mobile-chip active" : "mobile-chip"}
+                    className={
+                      source === selectedSource
+                        ? "mobile-chip active"
+                        : "mobile-chip"
+                    }
                     key={source}
                     type="button"
                     onClick={() => onSelectSource(source)}
@@ -564,8 +726,20 @@ function MobileFilterSheet({
           ) : null}
         </div>
         <footer className="mobile-sheet-actions">
-          <button className="mobile-clear-button" type="button" onClick={onClear}>清除筛选</button>
-          <button className="mobile-done-button" type="button" onClick={onClose}>完成</button>
+          <button
+            className="mobile-clear-button"
+            type="button"
+            onClick={onClear}
+          >
+            清除筛选
+          </button>
+          <button
+            className="mobile-done-button"
+            type="button"
+            onClick={onClose}
+          >
+            完成
+          </button>
         </footer>
       </section>
     </div>
@@ -583,7 +757,7 @@ function ReaderSidebar({
   onSearchChange,
   onSelectSource,
   onSelectTag,
-  onSelectType
+  onSelectType,
 }: {
   articles: PublicArticleEntry[];
   search: string;
@@ -612,9 +786,11 @@ function ReaderSidebar({
       <nav className="nav-section" aria-label="分类">
         <h2>视图</h2>
         {contentTypes.map((type) => {
-          const count = type === "全部文章"
-            ? articles.length
-            : articles.filter((article) => article.contentType === type).length;
+          const count =
+            type === "全部文章"
+              ? articles.length
+              : articles.filter((article) => article.contentType === type)
+                  .length;
           return (
             <button
               className={type === selectedType ? "nav-item active" : "nav-item"}
@@ -642,7 +818,11 @@ function ReaderSidebar({
         <div className="tag-filter-list">
           {tags.map((tag) => (
             <button
-              className={tag === selectedTag ? "tag-filter-button active" : "tag-filter-button"}
+              className={
+                tag === selectedTag
+                  ? "tag-filter-button active"
+                  : "tag-filter-button"
+              }
               key={tag}
               type="button"
               onClick={() => onSelectTag(tag)}
@@ -667,7 +847,11 @@ function ReaderSidebar({
           <div className="source-filter-list">
             {sources.slice(0, 12).map((source) => (
               <button
-                className={source === selectedSource ? "source-filter-button active" : "source-filter-button"}
+                className={
+                  source === selectedSource
+                    ? "source-filter-button active"
+                    : "source-filter-button"
+                }
                 key={source}
                 type="button"
                 onClick={() => onSelectSource(source)}
@@ -682,7 +866,13 @@ function ReaderSidebar({
   );
 }
 
-function ArticleInbox({ articles, selectedSlug }: { articles: PublicArticleEntry[]; selectedSlug?: string }) {
+function ArticleInbox({
+  articles,
+  selectedSlug,
+}: {
+  articles: PublicArticleEntry[];
+  selectedSlug?: string;
+}) {
   return (
     <section className="inbox" aria-label="文章列表">
       <div className="inbox-header">
@@ -692,24 +882,44 @@ function ArticleInbox({ articles, selectedSlug }: { articles: PublicArticleEntry
         </div>
       </div>
       {articles.length === 0 ? (
-        <StatusMessage title="没有匹配文章" detail="调整搜索、分类、标签或来源后再试。" />
+        <StatusMessage
+          title="没有匹配文章"
+          detail="调整搜索、分类、标签或来源后再试。"
+        />
       ) : (
         <div className="article-list">
           {articles.map((article) => (
-            <article className={article.slug === selectedSlug ? "article-row selected" : "article-row"} key={article.slug}>
+            <article
+              className={
+                article.slug === selectedSlug
+                  ? "article-row selected"
+                  : "article-row"
+              }
+              key={article.slug}
+            >
               <button
                 className="article-link"
                 type="button"
-                onClick={() => navigate(`/articles/${encodeURIComponent(article.slug)}`)}
+                onClick={() =>
+                  navigate(`/articles/${encodeURIComponent(article.slug)}`)
+                }
               >
                 <span className="article-title">{article.title}</span>
-                <span className="article-meta-line">{articleMeta(article)}</span>
+                <span className="article-meta-line">
+                  {articleMeta(article)}
+                </span>
                 {articleSummary(article) ? (
-                  <span className="article-summary">{articleSummary(article)}</span>
+                  <span className="article-summary">
+                    {articleSummary(article)}
+                  </span>
                 ) : null}
                 {article.tags.length > 0 ? (
                   <span className="tag-row compact">
-                    {article.tags.slice(0, 3).map((tag) => <span className="tag" key={tag}>{tag}</span>)}
+                    {article.tags.slice(0, 3).map((tag) => (
+                      <span className="tag" key={tag}>
+                        {tag}
+                      </span>
+                    ))}
                   </span>
                 ) : null}
               </button>
@@ -721,11 +931,20 @@ function ArticleInbox({ articles, selectedSlug }: { articles: PublicArticleEntry
   );
 }
 
-function ArticlePane({ article, route }: { article?: PublicArticleEntry; route: Route }) {
+function ArticlePane({
+  article,
+  route,
+}: {
+  article?: PublicArticleEntry;
+  route: Route;
+}) {
   if (route.name === "article" && !article) {
     return (
       <section className="reader-panel">
-        <StatusMessage title="未找到文章" detail="请返回列表重新选择一篇文章。" />
+        <StatusMessage
+          title="未找到文章"
+          detail="请返回列表重新选择一篇文章。"
+        />
       </section>
     );
   }
@@ -741,7 +960,9 @@ function ArticlePane({ article, route }: { article?: PublicArticleEntry; route: 
 }
 
 function ArticlePage({ article }: { article: PublicArticleEntry }) {
-  const [markdownState, setMarkdownState] = useState<LoadState<string>>({ status: "loading" });
+  const [markdownState, setMarkdownState] = useState<LoadState<string>>({
+    status: "loading",
+  });
   const [isTocOpen, setIsTocOpen] = useState(false);
 
   useEffect(() => {
@@ -749,15 +970,20 @@ function ArticlePage({ article }: { article: PublicArticleEntry }) {
     setMarkdownState({ status: "loading" });
     fetch(joinUrl(ossBaseUrl, article.path), { signal: controller.signal })
       .then((response) => {
-        if (!response.ok) throw new Error(`Article request failed: ${response.status}`);
+        if (!response.ok)
+          throw new Error(`Article request failed: ${response.status}`);
         return response.text();
       })
-      .then((markdown) => setMarkdownState({ status: "loaded", data: markdown }))
+      .then((markdown) =>
+        setMarkdownState({ status: "loaded", data: markdown }),
+      )
       .catch((error) => {
-        if (error instanceof DOMException && error.name === "AbortError") return;
+        if (error instanceof DOMException && error.name === "AbortError")
+          return;
         setMarkdownState({
           status: "failed",
-          message: error instanceof Error ? error.message : "Failed to load article."
+          message:
+            error instanceof Error ? error.message : "Failed to load article.",
         });
       });
 
@@ -765,19 +991,31 @@ function ArticlePage({ article }: { article: PublicArticleEntry }) {
   }, [article.path]);
 
   const document = useMemo(
-    () => markdownState.status === "loaded" ? parseMarkdownDocument(markdownState.data) : undefined,
-    [markdownState]
+    () =>
+      markdownState.status === "loaded"
+        ? parseMarkdownDocument(markdownState.data)
+        : undefined,
+    [markdownState],
   );
-  const headings = useMemo(() => document ? extractHeadings(document.body) : [], [document]);
+  const headings = useMemo(
+    () => (document ? extractHeadings(document.body) : []),
+    [document],
+  );
 
   const title = stringValue(document?.frontmatter.title) ?? article.title;
   const author = stringValue(document?.frontmatter.author) ?? article.author;
-  const contentType = stringValue(document?.frontmatter.content_type) ?? article.contentType;
-  const updatedAt = stringValue(document?.frontmatter.created) ?? article.updatedAt ?? article.created;
-  const tags = stringArrayValue(document?.frontmatter.tags).length > 0
-    ? stringArrayValue(document?.frontmatter.tags)
-    : article.tags;
-  const sourceUrl = stringValue(document?.frontmatter.source_url) ?? article.sourceUrl;
+  const contentType =
+    stringValue(document?.frontmatter.content_type) ?? article.contentType;
+  const updatedAt =
+    stringValue(document?.frontmatter.created) ??
+    article.updatedAt ??
+    article.created;
+  const tags =
+    stringArrayValue(document?.frontmatter.tags).length > 0
+      ? stringArrayValue(document?.frontmatter.tags)
+      : article.tags;
+  const sourceUrl =
+    stringValue(document?.frontmatter.source_url) ?? article.sourceUrl;
   const safeSourceUrl = safeUrl(sourceUrl);
 
   return (
@@ -790,28 +1028,33 @@ function ArticlePage({ article }: { article: PublicArticleEntry }) {
       <div className="reader-scroll">
         <div className="reader-layout">
           <div className="reader-article">
-            <button className="back-button" type="button" onClick={() => navigate("/")}>返回列表</button>
+            <button
+              className="back-button"
+              type="button"
+              onClick={() => navigate("/")}
+            >
+              返回列表
+            </button>
             <header className="reader-header">
-              <div className="reader-kicker">{contentType}</div>
               <h1>{title}</h1>
-              <div className="reader-meta">
-                {author ? <span>{author}</span> : null}
-                <span>{formatDate(updatedAt)}</span>
-                <span>{article.sourceHost ?? sourceHost(sourceUrl)}</span>
-              </div>
-              {tags.length > 0 ? (
-                <div className="tag-row">
-                  {tags.map((tag) => <span className="tag" key={tag}>{tag}</span>)}
-                </div>
-              ) : null}
             </header>
-            {markdownState.status === "loading" ? <StatusMessage title="正在加载正文" /> : null}
+            {markdownState.status === "loading" ? (
+              <StatusMessage title="正在加载正文" />
+            ) : null}
             {markdownState.status === "failed" ? (
-              <StatusMessage title="无法加载正文" detail={markdownState.message} />
+              <StatusMessage
+                title="无法加载正文"
+                detail={markdownState.message}
+              />
             ) : null}
             {document ? <MarkdownBody markdown={document.body} /> : null}
             {safeSourceUrl ? (
-              <a className="source-link" href={safeSourceUrl} target="_blank" rel="noreferrer">
+              <a
+                className="source-link"
+                href={safeSourceUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
                 查看原文
               </a>
             ) : null}
@@ -831,7 +1074,7 @@ function ArticlePage({ article }: { article: PublicArticleEntry }) {
 function MobileReaderToolbar({
   hasToc,
   title,
-  onOpenToc
+  onOpenToc,
 }: {
   hasToc: boolean;
   title: string;
@@ -839,10 +1082,14 @@ function MobileReaderToolbar({
 }) {
   return (
     <div className="mobile-reader-toolbar">
-      <button type="button" onClick={() => navigate("/")}>返回</button>
+      <button type="button" onClick={() => navigate("/")}>
+        返回
+      </button>
       <span>{title}</span>
       {hasToc ? (
-        <button type="button" onClick={onOpenToc}>目录</button>
+        <button type="button" onClick={onOpenToc}>
+          目录
+        </button>
       ) : (
         <span aria-hidden="true" />
       )}
@@ -853,7 +1100,7 @@ function MobileReaderToolbar({
 function MobileTocSheet({
   headings,
   isOpen,
-  onClose
+  onClose,
 }: {
   headings: Heading[];
   isOpen: boolean;
@@ -863,11 +1110,18 @@ function MobileTocSheet({
 
   return (
     <div className="mobile-sheet-layer" role="presentation">
-      <button className="mobile-sheet-backdrop" type="button" aria-label="关闭目录" onClick={onClose} />
+      <button
+        className="mobile-sheet-backdrop"
+        type="button"
+        aria-label="关闭目录"
+        onClick={onClose}
+      />
       <section className="mobile-sheet mobile-toc-sheet" aria-label="目录">
         <header className="mobile-sheet-header">
           <h2>目录</h2>
-          <button type="button" onClick={onClose}>完成</button>
+          <button type="button" onClick={onClose}>
+            完成
+          </button>
         </header>
         <nav className="mobile-toc-list">
           {headings.map((heading) => (
@@ -893,7 +1147,11 @@ function TableOfContents({ headings }: { headings: Heading[] }) {
     <aside className="toc" aria-label="目录">
       <h2>目录</h2>
       {headings.map((heading) => (
-        <a className={`toc-link depth-${heading.depth}`} href={`#${heading.id}`} key={heading.id}>
+        <a
+          className={`toc-link depth-${heading.depth}`}
+          href={`#${heading.id}`}
+          key={heading.id}
+        >
           {heading.title}
         </a>
       ))}
@@ -902,17 +1160,43 @@ function TableOfContents({ headings }: { headings: Heading[] }) {
 }
 
 function MarkdownBody({ markdown }: { markdown: string }) {
+  const normalizedMarkdown = useMemo(
+    () => normalizeMetadataBlockquotes(markdown),
+    [markdown],
+  );
+
   return (
     <div className="markdown-body">
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkHeadingIds]}
         components={{
+          p({ children }) {
+            const tags = metadataTags(children);
+            if (tags.length === 0) return <p>{children}</p>;
+
+            return (
+              <p className="markdown-meta-tags">
+                <span className="markdown-meta-label">标签：</span>
+                <span className="markdown-meta-tag-list">
+                  {tags.map((tag) => (
+                    <span className="markdown-meta-tag" key={tag}>
+                      #{tag}
+                    </span>
+                  ))}
+                </span>
+              </p>
+            );
+          },
           a({ children, href }) {
             const safeHref = safeUrl(href);
             if (!safeHref) return <span>{children}</span>;
             const external = /^https?:\/\//.test(safeHref);
             return (
-              <a href={safeHref} rel={external ? "noreferrer" : undefined} target={external ? "_blank" : undefined}>
+              <a
+                href={safeHref}
+                rel={external ? "noreferrer" : undefined}
+                target={external ? "_blank" : undefined}
+              >
                 {children}
               </a>
             );
@@ -926,11 +1210,15 @@ function MarkdownBody({ markdown }: { markdown: string }) {
             return <pre className="code-block">{children}</pre>;
           },
           table({ children }) {
-            return <div className="table-scroll"><table>{children}</table></div>;
-          }
+            return (
+              <div className="table-scroll">
+                <table>{children}</table>
+              </div>
+            );
+          },
         }}
       >
-        {markdown}
+        {normalizedMarkdown}
       </ReactMarkdown>
     </div>
   );

@@ -1,6 +1,6 @@
-# LinkProcessingAgent Raycast 扩展
+# 观（Guan）Raycast 扩展
 
-在 Raycast 中输入链接，一步保存到 Obsidian。扩展直接调用本地 LinkProcessingAgent CLI，不依赖 HTTP 服务。
+在 Raycast 中输入链接，一步保存到 Obsidian。扩展直接调用本地 Guan CLI，不依赖 HTTP 服务。
 
 ## 准备
 

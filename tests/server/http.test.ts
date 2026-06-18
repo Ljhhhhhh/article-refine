@@ -109,7 +109,7 @@ describe("HTTP server", () => {
   test("GET /v1/healthz returns ok", async () => {
     const r = await request(server.port, "GET", "/v1/healthz");
     expect(r.status).toBe(200);
-    expect(r.body).toMatchObject({ ok: true, name: "link-processing" });
+    expect(r.body).toMatchObject({ ok: true, name: "guan" });
   });
 
   test("POST /v1/route returns RouteResult", async () => {

@@ -79,15 +79,10 @@ input:focus-visible {
 }
 
 .brand-mark {
-  display: grid;
+  display: block;
   width: 28px;
   height: 28px;
-  place-items: center;
-  border: 1px solid var(--border-strong);
   border-radius: 7px;
-  color: #173f39;
-  background: var(--accent-soft);
-  font-size: 14px;
 }
 
 .topbar-meta {
@@ -461,6 +456,38 @@ main {
   padding: 2px 0 2px 18px;
   color: #555850;
   font-size: 17px;
+}
+
+.markdown-body blockquote p {
+  white-space: pre-line;
+}
+
+.markdown-body .markdown-meta-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  white-space: normal;
+}
+
+.markdown-meta-label {
+  font-weight: 700;
+}
+
+.markdown-meta-tag-list {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.markdown-meta-tag {
+  border: 1px solid #c9ddd5;
+  border-radius: 999px;
+  padding: 2px 8px;
+  color: #173f39;
+  background: var(--accent-soft);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .markdown-body hr {

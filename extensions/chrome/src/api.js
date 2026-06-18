@@ -1,4 +1,4 @@
-// Shared fetch client for the local LinkProcessingAgent HTTP server.
+// Shared fetch client for the local Guan HTTP server.
 // Imported by both the background service worker and the popup.
 
 const DEFAULT_SETTINGS = {

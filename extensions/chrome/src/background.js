@@ -60,12 +60,12 @@ chrome.runtime.onInstalled.addListener(() => {
   try {
     chrome.contextMenus.create({
       id: MENU_ID_PAGE,
-      title: "保存到 Obsidian (LinkProcessingAgent)",
+      title: "保存到 Obsidian（观 Guan）",
       contexts: ["page"]
     });
     chrome.contextMenus.create({
       id: MENU_ID_LINK,
-      title: "保存链接到 Obsidian (LinkProcessingAgent)",
+      title: "保存链接到 Obsidian（观 Guan）",
       contexts: ["link"]
     });
   } catch (err) {

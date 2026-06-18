@@ -20,6 +20,7 @@ describe("renderStandardTemplate", () => {
 
     expect(markdown).toContain("# AI Agent 架构设计");
     expect(markdown).toContain("> 创建日期：2026-05-07");
+    expect(markdown).toContain("> 创建日期：2026-05-07\n>\n> 来源：https://example.com/article");
     expect(markdown).toContain("> 来源：https://example.com/article");
     expect(markdown).toContain("> 作者：Example Author");
     expect(markdown).toContain("> 抓取时间：2026-05-07 10:20");
