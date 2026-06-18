@@ -61,6 +61,7 @@
     "tsup": "latest",
     "tsx": "latest",
     "typescript": "latest",
+    "vite": "^8.0.11",
     "vitest": "latest"
   }
 }
